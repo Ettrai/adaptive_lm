@@ -66,9 +66,9 @@ def ensemble_models_outputs(arguments):
     for token in range(num_tokens):
         accumulate = 0.0
         for model in range(num_models):
-            accumulate += models_outputs[model][token]
+            accumulate += np.exp(-models_outputs[model][token])
         average = accumulate / num_models
-        ensemble_output.append(average)
+        ensemble_output.append(-np.log(average))
 
     print
     print "Ensemble average loss: " + str(np.mean(ensemble_output))
