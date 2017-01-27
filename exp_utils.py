@@ -143,10 +143,21 @@ def run_epoch(sess, m, data_iter, opt,
         num_words += np.sum(w)
         if token_loss is not None:
             for i, t in enumerate(np.nditer(y)):
-                token_loss[t,0] += 1
-                token_loss[t,1] += res[1][i]
+                # # print i,t
+                #print t
+                # token_loss[t,0] += 1
+                # token_loss[t,1] += res[1][i]
+                #print t
+                #print t.item()
+
+                token_loss.append( (t.item(), res[1][i]) )
+
+
         if train_op.name != u'NoOp' and (step + 1) % opt.progress_steps == 0:
             logger.info("-- @{} perplexity: {} wps: {}".format(
                     step + 1, np.exp(costs / (step + 1)),
                     num_words / (time.time() - start_time)))
+
+    for token in token_loss:
+        print token
     return np.exp(costs / (step+1)), step

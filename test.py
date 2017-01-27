@@ -19,6 +19,7 @@ import data_utils
 from exp_utils import *
 
 def main(opt):
+    logger = opt.logger
     vocab_path = os.path.join(opt.data_dir, opt.vocab_file)
     test_path = os.path.join(opt.data_dir, opt.test_file)
     logger.info('Loading data set...')
@@ -57,23 +58,35 @@ def main(opt):
             logger.error('Failed to load the model. Testing aborted.')
             return
         logger.info('Testing...')
-        token_loss = None
-        if opt.vocab_ppl_file is not None:
-            token_loss = np.zeros([vocab.vocab_size, 2])
+        token_loss = []
+        # if opt.vocab_ppl_file is not None:
+        #     token_loss = np.zeros([vocab.vocab_size, 2])
         ppl, steps = run_epoch(sess, model, test_iter, opt,
                                token_loss=token_loss)
         logger.info('PPL = {}'.format(ppl))
         if token_loss is not None:
             logger.info('Writing vocabulary PPL...')
             vocab_ppl_path = os.path.join(opt.output_dir, opt.vocab_ppl_file)
-            # vocab_ppl = np.exp(token_loss[:,1] / token_loss[:,0])
+
+            # with open(vocab_ppl_path, 'w') as ofp:
+            #     for i in range(len(token_loss)):
+            #         t_ppl = 0
+            #         if token_loss[i, 0] > 0:
+            #             t_ppl = np.exp(token_loss[i, 1] / token_loss[i, 0])
+            #         ofp.write("{}\t{}\t{}\n".format(
+            #             vocab.i2w(i), token_loss[i, 0], t_ppl))
+
             with open(vocab_ppl_path, 'w') as ofp:
-                for i in range(len(token_loss)):
-                    t_ppl = 0
-                    if token_loss[i, 0] > 0:
-                        t_ppl = np.exp(token_loss[i, 1] / token_loss[i, 0])
-                    ofp.write("{}\t{}\t{}\n".format(
-                        vocab.i2w(i), token_loss[i, 0], t_ppl))
+                for token in token_loss:
+                    # t_ppl = 0
+                    # if token_loss[i, 0] > 0:
+                    #     t_ppl = np.exp(token_loss[i, 1] / token_loss[i, 0])
+                    #ofp.write("{}\t{}\n".format(vocab.i2w(token[0]), token[1]))
+                    # print token
+                    ofp.write("{}\t{}\n".format(vocab.i2w(token[0]), token[1]))
+        sess.close()
+
+
 
 if __name__ == "__main__":
     global_time = time.time()
