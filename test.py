@@ -64,27 +64,14 @@ def main(opt):
         ppl, steps = run_epoch(sess, model, test_iter, opt,
                                token_loss=token_loss)
         logger.info('PPL = {}'.format(ppl))
+
         if token_loss is not None:
             logger.info('Writing vocabulary PPL...')
             vocab_ppl_path = os.path.join(opt.output_dir, opt.vocab_ppl_file)
-
-            # with open(vocab_ppl_path, 'w') as ofp:
-            #     for i in range(len(token_loss)):
-            #         t_ppl = 0
-            #         if token_loss[i, 0] > 0:
-            #             t_ppl = np.exp(token_loss[i, 1] / token_loss[i, 0])
-            #         ofp.write("{}\t{}\t{}\n".format(
-            #             vocab.i2w(i), token_loss[i, 0], t_ppl))
-
             with open(vocab_ppl_path, 'w') as ofp:
                 for token in token_loss:
-                    # t_ppl = 0
-                    # if token_loss[i, 0] > 0:
-                    #     t_ppl = np.exp(token_loss[i, 1] / token_loss[i, 0])
-                    #ofp.write("{}\t{}\n".format(vocab.i2w(token[0]), token[1]))
-                    # print token
-                    ofp.write("{}\t{}\n".format(vocab.i2w(token[0]), token[1]))
-        sess.close()
+                    t_ppl = np.exp(token[1])
+                    ofp.write("{}\t{}\t{}\n".format(vocab.i2w(token[0]), token[1], t_ppl))
 
 
 

@@ -158,6 +158,4 @@ def run_epoch(sess, m, data_iter, opt,
                     step + 1, np.exp(costs / (step + 1)),
                     num_words / (time.time() - start_time)))
 
-    for token in token_loss:
-        print token
     return np.exp(costs / (step+1)), step
