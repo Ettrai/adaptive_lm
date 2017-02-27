@@ -18,6 +18,7 @@ import json
 import random
 # random.seed(1234)
 
+import cPickle
 import numpy as np
 # np.random.seed(1234)
 import tensorflow as tf
@@ -91,6 +92,10 @@ def main(lm_opt):
 if __name__ == "__main__":
     global_time = time.time()
     parser = common_utils.get_common_argparse()
+
+    parser.add_argument('--special_train', action='store_true',
+                        help='train using masks')
+
     args = parser.parse_args()
     opt = common_utils.Bunch.default_model_options()
     opt.update_from_ns(args)
@@ -100,5 +105,13 @@ if __name__ == "__main__":
     else:
         logger.setLevel(logging.INFO)
     logger.info('Configurations:\n{}'.format(opt.__repr__()))
+
+    if(opt.special_train):
+        logger.info('Loading Masks ')
+        opt.parameter_masks =  cPickle.load(open("models/r1.0/gen_m1/parameters_m1_m2_t1_46.6641693115_t2_6.87459030151.pickle", "r"))
+        opt.freeze_masks = cPickle.load(open("models/r1.0/gen_m1/freeze_m1_m2_t1_46.6641693115_t2_6.87459030151.pickle", "r"))
+        logger.info('Loading Masks completed')
+        exit()
+
     main(opt)
     logger.info('Total time: {}s'.format(time.time() - global_time))

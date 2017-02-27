@@ -19,7 +19,7 @@ import data_utils
 from exp_utils import *
 
 def main(lm_opt):
-    logger = opt.logger
+    logger = lm_opt.logger
     model_prefix = ['best_lm']
     dataset = ['test']
     lm_data, lm_vocab = load_datasets(lm_opt, dataset=dataset)
@@ -54,7 +54,7 @@ def main(lm_opt):
             return
         logger.info('Testing...')
         token_loss = None
-        if opt.out_token_loss_file is not None:
+        if lm_opt.out_token_loss_file is not None:
             token_loss = []
         ppl, _ = run_epoch(sess, model, lm_data['test'], lm_opt,
                            token_loss=token_loss)
@@ -62,8 +62,8 @@ def main(lm_opt):
 
         if token_loss is not None:
             logger.info('Writing token loss...')
-            token_loss_path = os.path.join(opt.output_dir,
-                                           opt.out_token_loss_file)
+            token_loss_path = os.path.join(lm_opt.output_dir,
+                                           lm_opt.out_token_loss_file)
             with open(token_loss_path, 'w') as ofp:
                 for token in token_loss:
                     t_ppl = np.exp(token[1])
@@ -93,5 +93,6 @@ if __name__ == "__main__":
         if opt.num_steps > 1:
             logger.warn(("Num steps is larger than 1."
                          "Output token may loss toward the end."))
+    opt.logger = logger
     main(opt)
     logger.info('Total time: {}s'.format(time.time() - global_time))

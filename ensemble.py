@@ -9,7 +9,7 @@ import test
 
 def gather_model_outputs(model_name):
 
-    models_path = "models/"
+    models_path = "models/r1.0/"
     # models_names = ["m1" , "m2" , "m3", "m4"]
 
     opt.num_steps = 1
@@ -17,7 +17,7 @@ def gather_model_outputs(model_name):
     opt.emb_size = 300
     opt.state_size = 300
     opt.max_grad_nor= 5.0
-    opt.vocab_ppl_file = "model_output.tsv"
+    opt.out_token_loss_file = "model_output.tsv"
 
     opt.output_dir = models_path + model_name
     opt.logger = logger
@@ -29,7 +29,7 @@ def gather_model_outputs(model_name):
 
 
 def ensemble_models_outputs(arguments):
-    models_path = "models/"
+    models_path = "models/r1.0/"
     models_names = arguments.split(',')
 
     # models_names = ["m1" , "m2" , "m3", "m4"]
@@ -79,8 +79,8 @@ if __name__ == "__main__":
 
     global_time = time.time()
     parser = common_utils.get_common_argparse()
-    parser.add_argument('--compute_output', type=bool,default=False, help='compute output of a model')
-    parser.add_argument('--compute_ensemble', type=bool,default=False, help='compute output of a model')
+    parser.add_argument('--compute_output', action='store_true', help='compute output of a model')
+    parser.add_argument('--compute_ensemble', taction='store_true', help='compute output of a model')
     parser.add_argument('--ensemble_of', type=str,default=None, help='models names')
     parser.add_argument('--model_name', type=str,default=None, help='model to gather outputs from')
 
