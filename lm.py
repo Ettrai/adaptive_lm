@@ -39,6 +39,30 @@ def train_op(model, opt):
         global_step=global_step)
     return train_op, lr
 
+def train_op_mod(model, opt):
+    lr = tf.Variable(opt.learning_rate, trainable=False)
+    global_step = tf.contrib.framework.get_or_create_global_step()
+    optimizer = get_optimizer(lr, opt.optim)
+    loss = model.loss * opt.batch_size
+    g_v_pairs = optimizer.compute_gradients(loss)
+    grads, tvars = [], []
+    for g,v in g_v_pairs:
+        tvars.append(v)
+
+        # "LM/emb_0:0" MASK
+        # "LM/rnn/RNN/MultiRNNCell/Cell0/BasicLSTMCell/Linear/Matrix:0" MASK
+        # "LM/rnn/RNN/MultiRNNCell/Cell0/BasicLSTMCell/Linear/Bias:0" MASK
+
+        grads.append(g)
+
+    clipped_grads, _norm = tf.clip_by_global_norm(
+        grads, opt.max_grad_norm)
+    g_v_pairs = zip(clipped_grads, tvars)
+    train_op = optimizer.apply_gradients(
+        g_v_pairs,
+        global_step=global_step)
+    return train_op, lr
+
 class LM(object):
 
     def __init__(self, opt, is_training=True):

@@ -46,7 +46,12 @@ def main(lm_opt):
         logger.debug('- Creating training LM...')
         with tf.variable_scope('LM', reuse=None, initializer=initializer):
             lm_train = lm.LM(lm_opt)
-            lm_train_op, lm_lr_var = lm.train_op(lm_train, lm_opt)
+
+            if(lm_opt.special_train):
+                lm_train_op, lm_lr_var = lm.train_op_mod(lm_train, lm_opt)
+            else:
+                lm_train_op, lm_lr_var = lm.train_op(lm_train, lm_opt)
+
         logger.debug('- Creating validating LM (reuse params)...')
         with tf.variable_scope('LM', reuse=True, initializer=initializer):
             lm_valid = lm.LM(lm_opt, is_training=False)
