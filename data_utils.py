@@ -150,26 +150,37 @@ class DataIterator(object):
     Iterate over text data
 
     kwargs:
-        * x_vocab: Vocabulary for inputs
-        * y_vocab: Vocabulary for targets
-        * sos: Add start of sentence ID (False)
-        * eos: Add end of sentence ID (True)
+        * x_vocab: Vocabulary for inputs (default: vocab)
+        * y_vocab: Vocabulary for targets (default: vocab)
+        * sos: Add start of sentence ID (default: False)
+        * eos: Add end of sentence ID (default: True)
+        * shuffle_data: Shuffle data between epoch (default: True)
     """
     def __init__(self, vocab=None, file_path=None, **kwargs):
         self._kwargs = kwargs
         self._x_vocab, self._y_vocab = None, None
+        self._x_padding_id, self._y_padding_id = None, None
         self._add_sos, self._add_eos = False, True
+        self._shuffle_data = True
         if 'x_vocab' in self._kwargs:
             self._x_vocab = self._kwargs['x_vocab']
+            self._x_padding_id = self._x_vocab.eos_id
         if 'y_vocab' in self._kwargs:
             self._y_vocab = self._kwargs['y_vocab']
+            self._y_padding_id = self._y_vocab.eos_id
         if 'sos' in self._kwargs:
             self._add_sos = self._kwargs['sos']
         if 'eos' in self._kwargs:
             self._add_eos = self._kwargs['eos']
+        if 'shuffle_data' in self._kwargs:
+            self._shuffle_data = self._kwargs['shuffle_data']
         if vocab is not None:
             self._vocab = vocab
             self._padding_id = vocab.eos_id
+            if self._x_padding_id is None:
+                self._x_padding_id = vocab.eos_id
+            if self._y_padding_id is None:
+                self._y_padding_id = vocab.eos_id
             self._parse_file(file_path)
 
     def _parse_sentence(self, sentence, vocab=None):
@@ -215,13 +226,15 @@ class DataIterator(object):
         self._data = np.array(data, np.int32)
         if len(data_x) == 0:
             self._data_x = self._data
+            self._x_vocab = self._vocab
         else:
             data_x.insert(0, self._x_vocab.eos_id)
             self._data_x = np.array(data_x, np.int32)
         if len(data_y) == 0:
             self._data_y = self._data
+            self._y_vocab = self._vocab
         else:
-            data_x.insert(0, self._y_vocab.eos_id)
+            data_y.insert(0, self._y_vocab.eos_id)
             self._data_y = np.array(data_y, np.int32)
 
         self._lidx = label_idx
@@ -243,36 +256,43 @@ class DataIterator(object):
         self.l = [[None for _ in range(num_steps)] for _ in range(batch_size)]
         self.seq_len = np.zeros([batch_size], np.int32)
         self.seq_len[:] = self._num_steps
-        self._pointers = [0] * batch_size
-        distance = len(self._data) / batch_size
+        self._pointers = np.zeros([batch_size], np.int32)
+        distance = (len(self._data) - 1) / batch_size
+        left_over = (len(self._data) - 1) % batch_size
+        self._distances = np.zeros([batch_size], np.int32)
+        self._distances[:] = distance
+        self._distances[0:left_over] += 1
+        cur_pos = 0
         for i in range(batch_size):
-            self._pointers[i] = i * distance
-        random.shuffle(self._pointers)
-        # XXX: this will cut off the left-over data
-        self._epoch_tokens = distance
-        self._read_tokens = [0 for _ in range(batch_size)]
+            self._pointers[i] = cur_pos
+            cur_pos += self._distances[i]
+        if self._shuffle_data:
+            p = np.random.permutation(self._batch_size)
+            self._pointers = self._pointers[p]
+            self._distances = self._distances[p]
+        self._read_tokens = np.zeros([batch_size], np.int32)
 
     def next_batch(self):
-        if any((t + 1) >= self._epoch_tokens for t in self._read_tokens):
+        if all(self._read_tokens >= self._distances):
             return None, None, None, None, None
         # reset old data
-        self.x[:], self.y[:], self.w[:] = self._padding_id, self._padding_id, 0
+        self.x[:], self.y[:] = self._x_padding_id, self._y_padding_id
+        self.w[:], self.seq_len[:] = 0, 0
         for i in range(len(self.l)):
             for j in range(len(self.l[0])):
                 self.l[i][j] = -1
         # populating new data
-        for i, p in enumerate(self._pointers):
-            num_tokens = self._num_steps
-            if p + self._num_steps + 1 > len(self._data):
-                num_tokens = len(self._data) - p - 1
-            self.x[i, :num_tokens] = self._data_x[p: p + num_tokens]
-            self.y[i, :num_tokens] = self._data_y[p + 1: p + num_tokens + 1]
-            self.w[i, :num_tokens] = 1
-            for j in range(num_tokens):
-                self.l[i][j] = self._find_label(p + j)
-            # increment pointers
-            self._pointers[i] = p + num_tokens
-            self._read_tokens[i] += num_tokens
+        for i_batch in range(self._batch_size):
+            for i_token in range(self._num_steps):
+                if self._read_tokens[i_batch] >= self._distances[i_batch]:
+                    continue
+                cur_pos = self._pointers[i_batch]
+                self.x[i_batch, i_token] = self._data_x[cur_pos]
+                self.y[i_batch, i_token] = self._data_y[cur_pos + 1]
+                self.w[i_batch, i_token] = 1
+                self.seq_len[i_batch] += 1
+                self._pointers[i_batch] += 1
+                self._read_tokens[i_batch] += 1
         return self.x, self.y, self.w, self.l, self.seq_len
 
     def iterate_epoch(self, batch_size, num_steps=-1):
@@ -293,23 +313,25 @@ class SentenceIterator(DataIterator):
     current batch from a new set of sentences.
 
     kwargs:
-        * sos: Add start of sentence ID (Fixed to be True)
+        * sos: Add start of sentence ID (default: True)
     """
 
     def __init__(self, vocab=None, file_path=None, **kwargs):
-        kwargs['sos'] = True
+        if 'sos' not in kwargs:
+            kwargs['sos'] = True
         super(SentenceIterator, self).__init__(vocab, file_path, **kwargs)
-        self._sen_idx = [0]
+        self._sen_idx = []
         eos_id = self._vocab.eos_id
         for i, wid in enumerate(self._data):
-            if wid == eos_id and i + 1 < len(self._data):
+            if wid == eos_id and i + 1 < len(self._data) :
                 self._sen_idx.append(i+1)
 
     def init_batch(self, batch_size, num_steps):
         if num_steps < 1:
             warnings.warn("num_steps has to be more than 0.")
         self._batch_sen_idx = list(self._sen_idx)
-        random.shuffle(self._batch_sen_idx)
+        if self._shuffle_data:
+            random.shuffle(self._batch_sen_idx)
         self._batch_size = batch_size
         self._num_steps = num_steps
         self.x = np.zeros([batch_size, num_steps], np.int32)
@@ -319,10 +341,14 @@ class SentenceIterator(DataIterator):
         self.seq_len = np.zeros([batch_size], np.int32)
         self._pointers = np.zeros([batch_size], np.int32)
         distance = len(self._sen_idx) / batch_size
-        # XXX: this will cut off the left-over sentence
+        left_over = len(self._sen_idx) % batch_size
+        self._distances = np.array([distance for _ in range(batch_size)],
+                                  dtype=np.int32)
+        self._distances[0:left_over] += 1
+        cur_pos = 0
         for i in range(batch_size):
-            self._pointers[i] = i * distance
-        self._epoch_sentences = distance
+            self._pointers[i] = cur_pos
+            cur_pos += self._distances[i]
         self._read_sentences = np.array([0 for _ in range(batch_size)],
                                         dtype=np.int32)
         self._read_tokens = np.array([0 for _ in range(batch_size)],
@@ -336,7 +362,7 @@ class SentenceIterator(DataIterator):
             self._pointers[:] += 1
             self._read_sentences[:] += 1
             self._read_tokens[:] = 0
-            if any(t >= self._epoch_sentences for t in self._read_sentences):
+            if all(self._read_sentences >= self._distances):
                 return None, None, None, None, None
         elif self._read_tokens.sum() == 0:
             self._new_sentence_set = True
@@ -350,6 +376,9 @@ class SentenceIterator(DataIterator):
                 self.l[i][j] = None
         # populating new data
         for i_batch in range(self._batch_size):
+            if self._read_sentences[i_batch] >= self._distances[i_batch]:
+                self._read_tokens[i_batch] = -1
+                continue
             cur_pos = self._batch_sen_idx[self._pointers[i_batch]]
             cur_pos += self._read_tokens[i_batch]
             for i_step in range(self._num_steps):
@@ -367,179 +396,6 @@ class SentenceIterator(DataIterator):
 
     def is_new_sen(self):
         return self._new_sentence_set
-######################################################
-# TokenFeatureIterator
-######################################################
-
-class TokenFeatureIterator(DataIterator):
-    """
-    Overwrite the labels of DataIterator with token features
-
-    kwargs:
-        * t_feature_idx:
-            index from token id -> start feature index
-            (stop at next token id)
-        * t_features: numpy array of features
-    """
-    def _parse_file(self, filepath):
-        super(TokenFeatureIterator,self)._parse_file(filepath)
-        self._t_f_idx = None
-        self._t_f = None
-        self.f_x, self.f_y, self.f_w, self.f_l, self.f_seq_len =\
-        None, None, None, None, None
-        self._cur_feature_pointers = []
-        self._cur_fdata_pointers = []
-        if 't_feature_idx' in self._kwargs:
-            self._t_f_idx = self._kwargs['t_feature_idx']
-            self._t_f = self._kwargs['t_features']
-            self.feature_size = self._t_f.shape[1]
-
-    def _find_label(self, data_pointer):
-        if self._t_f_idx is None:
-            return super(TokenFeatureIterator, self)._lkeys[
-                bisect_right(self._lidx, data_pointer) - 1]
-        else:
-            data = self._data[data_pointer]
-            start = self._t_f_idx[data]
-            end = self._t_f_idx[data+1]
-            if start == end:
-                return self._t_f[-1, :]
-            else:
-                self._cur_feature_pointers += range(start, end)
-                self._cur_fdata_pointers += \
-                [self._data[data_pointer]] * (end - start)
-                return self._t_f[start:end, :]
-
-    def cur_features_batch(self, num_samples):
-        """
-        Sample rows in self.l from current batch
-        and create a batch for training
-        """
-        if self.f_x is None or self.f_x.shape[0] != num_samples:
-            self.f_x = np.zeros([num_samples, self.feature_size], np.int32)
-            self.f_y = np.zeros([num_samples, self.feature_size], np.int32)
-            self.f_w = np.zeros([num_samples, self.feature_size], np.int32)
-            self.f_l = np.zeros([num_samples, self.feature_size], np.int32)
-            self.f_seq_len = np.zeros(num_samples, np.int32)
-        if len(self._cur_feature_pointers) == 0:
-            return self.f_x, self.f_y, self.f_w, self.f_l, self.f_seq_len
-        f_padding_id = self._t_f[-1,0]
-        self.f_x[:] = f_padding_id
-        self.f_y[:] = f_padding_id
-        self.f_l[:] = self._padding_id
-        f_map = dict(zip(self._cur_feature_pointers,
-                         self._cur_fdata_pointers))
-        # XXX: sample w* with more definitions
-        f_idx = np.random.permutation(np.unique(self._cur_feature_pointers))
-        if len(f_idx) > num_samples:
-            f_idx = f_idx[0: num_samples]
-            self.f_x[:] = self._t_f[f_idx,:]
-        if len(f_idx) < num_samples:
-            self.f_x[0:len(f_idx),:] = self._t_f[f_idx,:]
-        for i, idx in enumerate(f_idx):
-            self.f_l[i,:] = f_map[idx]
-        self.f_seq_len = np.sum(self.f_x!=f_padding_id, axis=1) + 1
-        self.f_y[:, 0:-1] = self.f_x[:, 1:]
-        for i in range(num_samples):
-            self.f_w[i, 1:self.f_seq_len[i]-1] = 1
-            if self.f_seq_len[i] == 1:
-                self.f_seq_len[i] = 0
-        self._cur_feature_pointers = []
-        self._cur_fdata_pointers = []
-        return self.f_x, self.f_y, self.f_w, self.f_l, self.f_seq_len
-
-
-######################################################
-# DefIterator
-######################################################
-
-class DefIterator(DataIterator):
-    """
-    Iterate over a set of independent sentences.
-    The data will be padded to have equal lenght and
-    The labels will be mapped to IDs using label vocab
-
-    kwargs:
-        * l_vocab: a Vocabulary object
-    """
-
-    def _parse_file(self, filepath):
-        data = []
-        label_idx = []
-        label_keys = []
-        max_seq_len = 0
-        l_vocab = self._vocab
-        if 'l_vocab' in self._kwargs:
-            l_vocab = self._kwargs['l_vocab']
-        with open(filepath) as ifp:
-            for line in ifp:
-                doc = json.loads(line)
-                label_idx.append(len(data))
-                label_keys.append(l_vocab.w2i(doc['key']))
-                seq_len = 0
-                for s in doc['lines']:
-                    line = self._parse_sentence(s)
-                    seq_len += len(line)
-                    data += line
-                if seq_len > max_seq_len:
-                    max_seq_len = seq_len
-        padded_data = np.zeros([max_seq_len * len(label_keys)], np.int32)
-        padded_data[:] = self._padding_id
-        padded_label_idx = []
-        prev_idx = 0
-        for i in range(1, len(label_idx)):
-            padded_label_idx.append((i-1)*max_seq_len)
-            cur_seq_start = (i-1)*max_seq_len
-            cur_seq_end = cur_seq_start + label_idx[i] - prev_idx
-            padded_data[cur_seq_start:cur_seq_end] = data[prev_idx:label_idx[i]]
-            prev_idx = label_idx[i]
-        self._data = padded_data
-        # XXX: Properly set this
-        self._data_x = padded_data
-        self._data_y = padded_data
-        self._lidx = padded_label_idx
-        self._lkeys = label_keys
-        self._max_seq_len = max_seq_len
-
-    def _shuffle_data(self):
-        shuff_keys = []
-        shuff_data = np.zeros(self._data.shape, np.int32)
-        perm_index = range(len(self._lidx))
-        random.shuffle(perm_index)
-        for i, j in enumerate(perm_index):
-            shuff_keys.append(self._lkeys[j])
-            istart = i * self._max_seq_len
-            iend = (i + 1) * self._max_seq_len
-            jstart = j * self._max_seq_len
-            jend = (j + 1) * self._max_seq_len
-            shuff_data[istart:iend] = self._data[jstart:jend]
-        self._data = shuff_data
-        self._lkeys = shuff_keys
-
-    def init_batch(self, batch_size, num_steps=-1):
-        if num_steps != -1 and num_steps != self._max_seq_len:
-            warnings.warn("num_steps is not the same as max sequence len!")
-        if num_steps == -1:
-            num_steps = self._max_seq_len
-        super(DefIterator,self).init_batch(batch_size, num_steps)
-        #XXX: this will cut off some definition
-        distance = len(self._lidx) / batch_size
-        for i in range(batch_size):
-            self._pointers[i] = self._lidx[i * distance]
-        random.shuffle(self._pointers)
-        self._shuffle_data()
-        self.l = np.zeros([batch_size, num_steps], np.int32)
-
-    def next_batch(self):
-        x, _, _, _, _ = super(DefIterator, self).next_batch()
-        if x is None:
-            return None, None, None, None, None
-        self.y[:, -1] = self._padding_id
-        self.w[:] = 0
-        self.seq_len = np.sum(self.x!=self._padding_id, axis=1) + 1
-        for i in range(self._batch_size):
-            self.w[i, 1:self.seq_len[i]-1] = 1
-        return self.x, self.y, self.w, self.l, self.seq_len
 
 ######################################################
 # Module Functions
