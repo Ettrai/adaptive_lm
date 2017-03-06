@@ -147,6 +147,9 @@ def run_epoch(sess, m, data_iter, opt,
     costs = 0.0
     num_words = 0
     state = []
+
+    # print sess.run(opt._embedding_var)[:, 46] - opt.parameter_masks["LM/emb_0:0"][:, 46]
+
     for c, h in m.initial_state:
         state.append((c.eval(), h.eval()))
     for step, (x, y, w, l, seq_len) in enumerate(data_iter.iterate_epoch(
@@ -171,6 +174,9 @@ def run_epoch(sess, m, data_iter, opt,
                 fetches.append(c)
                 fetches.append(h)
         res = sess.run(fetches, feed_dict)
+
+        # print sess.run(opt._embedding_var)[:, 46] - opt.parameter_masks["LM/emb_0:0"][:, 46]
+
         cost = res[0]
         if not opt.reset_state:
             state_flat = res[f_state_start:]

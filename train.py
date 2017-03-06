@@ -48,6 +48,10 @@ def main(lm_opt):
             lm_train = lm.LM(lm_opt)
 
             if(lm_opt.special_train):
+                logger.info("Special train")
+                freeze_tensor = tf.constant(lm_opt.freeze_masks["LM/emb_0:0"])
+                freeze_tensor = tf.cast(freeze_tensor, tf.float32)
+                lm_opt.freeze_tensor = freeze_tensor
                 lm_train_op, lm_lr_var = lm.train_op_mod(lm_train, lm_opt)
             else:
                 lm_train_op, lm_lr_var = lm.train_op(lm_train, lm_opt)
@@ -57,9 +61,30 @@ def main(lm_opt):
             lm_valid = lm.LM(lm_opt, is_training=False)
         logger.debug('Trainable variables:')
         for v in tf.trainable_variables():
+            # logger.info("- {} {} {}".format(v.name, v.get_shape(), v.device))
             logger.debug("- {} {} {}".format(v.name, v.get_shape(), v.device))
         logger.info('Initializing vairables...')
         sess.run(tf.global_variables_initializer())
+
+        if(lm_opt.special_train):
+            for v in tf.trainable_variables():
+                print v.name
+                sess.run(v)
+                if "emb" in v.name:
+
+                    sess.run(tf.assign(v, opt.initialization))
+
+                    opt._embedding_var = v
+
+                    # print sess.run(v)[:, 100] - opt.parameter_masks["LM/emb_0:0"][:, 100]
+                    # v.assign(tf.multiply(v, freeze_tensor))
+                    # parameter_tensor = tf.constant(lm_opt.paramter_masks["LM/emb_0:0"])
+                    # parameter_tensor = tf.cast(parameter_tensor, tf.float32)
+                    # v.assign(tf.add(v, parameter_tensor))
+                    # sess.run(v)
+                    # exit()
+                    break
+
         saver = tf.train.Saver()
         states = {}
         for p in model_prefix:
@@ -105,6 +130,7 @@ if __name__ == "__main__":
     opt = common_utils.Bunch.default_model_options()
     opt.update_from_ns(args)
     logger = common_utils.get_logger(opt.log_file_path)
+    opt.logger = logger
     if opt.debug:
         logger.setLevel(logging.DEBUG)
     else:
@@ -112,11 +138,22 @@ if __name__ == "__main__":
     logger.info('Configurations:\n{}'.format(opt.__repr__()))
 
     if(opt.special_train):
+        # print "Hello"
         logger.info('Loading Masks ')
         opt.parameter_masks =  cPickle.load(open("models/r1.0/gen_m1/parameters_m1_m2_t1_46.6641693115_t2_6.87459030151.pickle", "r"))
         opt.freeze_masks = cPickle.load(open("models/r1.0/gen_m1/freeze_m1_m2_t1_46.6641693115_t2_6.87459030151.pickle", "r"))
+
+        temp = np.random.uniform(-.1 , .1, [10000, 300])
+
+        opt.initialization = np.multiply(temp, opt.freeze_masks["LM/emb_0:0"]) + opt.parameter_masks["LM/emb_0:0"]
+
+        # print opt.initialization[:, 100] - opt.parameter_masks["LM/emb_0:0"][:, 100]
+        # print opt.initialization[:, 46] - opt.parameter_masks["LM/emb_0:0"][:, 46]
+
+        # exit()
+
         logger.info('Loading Masks completed')
-        exit()
+        # exit()
 
     main(opt)
     logger.info('Total time: {}s'.format(time.time() - global_time))

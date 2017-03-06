@@ -48,12 +48,39 @@ def train_op_mod(model, opt):
     grads, tvars = [], []
     for g,v in g_v_pairs:
         tvars.append(v)
+        if "emb" in v.name and "softmax" not in g.name:
+            opt.logger.info("I am the trainer")
+            print
+            print "freeze matrix", opt.freeze_tensor
+            print
+            # print "g",g
+            # print
+            # print "v",v
+            # print
+            # # print tf.multiply(v,opt.freeze_tensor)
+            #
+            # print "g.values", g.values
+            # print
+            #
+            #
+            # tf.indexed
+            #
+            # exit()
+            mask = tf.constant(opt.freeze_masks["LM/emb_0:0"], dtype=tf.float32)
 
-        # "LM/emb_0:0" MASK
-        # "LM/rnn/RNN/MultiRNNCell/Cell0/BasicLSTMCell/Linear/Matrix:0" MASK
-        # "LM/rnn/RNN/MultiRNNCell/Cell0/BasicLSTMCell/Linear/Bias:0" MASK
 
-        grads.append(g)
+            grads.append(tf.multiply(g, mask))
+
+            # grads.append(tf.IndexedSlices(g.values * mask,
+            #                               g.indices, g.dense_shape))
+            #
+            # tf.multiply(tf.IndexedSlices(g.values * opt.batch_size,
+            #                  g.indices, g.dense_shape)) , tf.IndexedSlices(mask,
+            #                  g.indices, g.dense_shape))
+
+            # grads.append(g)
+        else:
+            grads.append(g)
 
     clipped_grads, _norm = tf.clip_by_global_norm(
         grads, opt.max_grad_norm)
