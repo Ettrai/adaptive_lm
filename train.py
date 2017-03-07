@@ -68,21 +68,18 @@ def main(lm_opt):
 
         if(lm_opt.special_train):
             for v in tf.trainable_variables():
-                print v.name
-                sess.run(v)
                 if "emb" in v.name:
+                    sess.run(tf.assign(v, lm_opt.initialization))
+                    lm_opt._embedding_var = v
 
-                    sess.run(tf.assign(v, opt.initialization))
-
-                    opt._embedding_var = v
-
-                    # print sess.run(v)[:, 100] - opt.parameter_masks["LM/emb_0:0"][:, 100]
+                    print sess.run(v)[:, 100] - opt.parameter_masks["LM/emb_0:0"][:, 100]
                     # v.assign(tf.multiply(v, freeze_tensor))
                     # parameter_tensor = tf.constant(lm_opt.paramter_masks["LM/emb_0:0"])
                     # parameter_tensor = tf.cast(parameter_tensor, tf.float32)
                     # v.assign(tf.add(v, parameter_tensor))
                     # sess.run(v)
                     # exit()
+
                     break
 
         saver = tf.train.Saver()
@@ -110,6 +107,14 @@ def main(lm_opt):
                                         lm_data['valid'], lm_opt)
             logger.info('----------------------------------')
             logger.info('LM post epoch routine...')
+
+            if (lm_opt.special_train):
+                shared_indexes = cPickle.load(open("models/r1.0/gen_m1/index_m1_m2_t1_46.6641693115_t2_6.87459030151.pickle", "r"))
+                for index in shared_indexes:
+                    if(np.array_equal(sess.run(lm_opt._embedding_var)[:, index], opt.parameter_masks["LM/emb_0:0"][:, index]) != True):
+                        print "something went horribly wrong"
+                        exit()
+
             done_training = run_post_epoch(
                 lm_train_ppl, lm_valid_ppl, lm_state, lm_opt,
                 sess=sess, saver=saver,
@@ -118,6 +123,9 @@ def main(lm_opt):
             if done_training:
                 break
         logger.info('Done training at epoch {}'.format(lm_state.epoch + 1))
+
+
+
 
 if __name__ == "__main__":
     global_time = time.time()
@@ -144,7 +152,6 @@ if __name__ == "__main__":
         opt.freeze_masks = cPickle.load(open("models/r1.0/gen_m1/freeze_m1_m2_t1_46.6641693115_t2_6.87459030151.pickle", "r"))
 
         temp = np.random.uniform(-.1 , .1, [10000, 300])
-
         opt.initialization = np.multiply(temp, opt.freeze_masks["LM/emb_0:0"]) + opt.parameter_masks["LM/emb_0:0"]
 
         # print opt.initialization[:, 100] - opt.parameter_masks["LM/emb_0:0"][:, 100]
