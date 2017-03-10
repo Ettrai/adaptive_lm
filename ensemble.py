@@ -22,9 +22,6 @@ def gather_model_outputs(model_name):
     opt.output_dir = models_path + model_name
     opt.logger = logger
 
-    #logger.info('Configurations:\n{}'.format(opt.__repr__()))
-    # CANNOT RUN SESSIONS LIKE THIS
-    # ERRORS STARTING FROM THE SECOND ITERATION!!!
     test.main(opt)
 
 
@@ -80,7 +77,7 @@ if __name__ == "__main__":
     global_time = time.time()
     parser = common_utils.get_common_argparse()
     parser.add_argument('--compute_output', action='store_true', help='compute output of a model')
-    parser.add_argument('--compute_ensemble', taction='store_true', help='compute output of a model')
+    parser.add_argument('--compute_ensemble', action='store_true', help='compute output of a model')
     parser.add_argument('--ensemble_of', type=str,default=None, help='models names')
     parser.add_argument('--model_name', type=str,default=None, help='model to gather outputs from')
 

@@ -49,7 +49,48 @@ def train_op_mod(model, opt):
     for g,v in g_v_pairs:
         tvars.append(v)
         if "emb" in v.name and "softmax" not in g.name:
-            mask = tf.constant(opt.freeze_masks["LM/emb_0:0"], dtype=tf.float32)
+            mask = tf.constant(opt.freeze_masks["LM/emb:0"], dtype=tf.float32)
+            grads.append(tf.multiply(g, mask))
+
+        else:
+            grads.append(g)
+
+    clipped_grads, _norm = tf.clip_by_global_norm(
+        grads, opt.max_grad_norm)
+    g_v_pairs = zip(clipped_grads, tvars)
+    train_op = optimizer.apply_gradients(
+        g_v_pairs,
+        global_step=global_step)
+    return train_op, lr
+
+def train_op_frozen(model, opt):
+    lr = tf.Variable(opt.learning_rate, trainable=False)
+    global_step = tf.contrib.framework.get_or_create_global_step()
+    optimizer = get_optimizer(lr, opt.optim)
+    loss = model.loss * opt.batch_size
+    g_v_pairs = optimizer.compute_gradients(loss)
+    grads, tvars = [], []
+    for g,v in g_v_pairs:
+        tvars.append(v)
+
+        if "emb" in v.name:
+            mask = tf.constant(opt.freeze_masks["LM/emb:0"], dtype=tf.float32)
+            grads.append(tf.multiply(g, mask))
+
+        elif "basic_lstm_cell/weights" in v.name:
+            mask = tf.constant(opt.freeze_masks["LM/rnn/rnn/multi_rnn_cell/cell_0/basic_lstm_cell/weights:0"], dtype=tf.float32)
+            grads.append(tf.multiply(g, mask))
+
+        elif "basic_lstm_cell/biases" in v.name:
+            mask = tf.constant(opt.freeze_masks["LM/rnn/rnn/multi_rnn_cell/cell_0/basic_lstm_cell/biases:0"], dtype=tf.float32)
+            grads.append(tf.multiply(g, mask))
+
+        elif "softmax_w" in v.name:
+            mask = tf.constant(opt.freeze_masks["softmax_w:0"], dtype=tf.float32)
+            grads.append(tf.multiply(g, mask))
+
+        elif "softmax_b" in v.name:
+            mask = tf.constant(opt.freeze_masks["softmax_b:0"], dtype=tf.float32)
             grads.append(tf.multiply(g, mask))
 
         else:

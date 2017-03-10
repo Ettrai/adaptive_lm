@@ -49,10 +49,15 @@ def main(lm_opt):
 
             if(lm_opt.special_train):
                 logger.info("Special train")
-                freeze_tensor = tf.constant(lm_opt.freeze_masks["LM/emb_0:0"])
-                freeze_tensor = tf.cast(freeze_tensor, tf.float32)
-                lm_opt.freeze_tensor = freeze_tensor
+                # freeze_tensor = tf.constant(lm_opt.freeze_masks["LM/emb_0:0"])
+                # freeze_tensor = tf.cast(freeze_tensor, tf.float32)
+                # lm_opt.freeze_tensor = freeze_tensor
                 lm_train_op, lm_lr_var = lm.train_op_mod(lm_train, lm_opt)
+
+            elif(lm_opt.freeze_model):
+                logger.info("Whole model frozen train")
+                lm_train_op, lm_lr_var = lm.train_op_frozen(lm_train, lm_opt)
+
             else:
                 lm_train_op, lm_lr_var = lm.train_op(lm_train, lm_opt)
 
@@ -71,16 +76,32 @@ def main(lm_opt):
                 if "emb" in v.name:
                     sess.run(tf.assign(v, lm_opt.initialization))
                     lm_opt._embedding_var = v
-
-                    print sess.run(v)[:, 100] - opt.parameter_masks["LM/emb_0:0"][:, 100]
+                    # print sess.run(v)[:, 100] - opt.parameter_masks["LM/emb:0"][:, 100]
                     # v.assign(tf.multiply(v, freeze_tensor))
                     # parameter_tensor = tf.constant(lm_opt.paramter_masks["LM/emb_0:0"])
                     # parameter_tensor = tf.cast(parameter_tensor, tf.float32)
                     # v.assign(tf.add(v, parameter_tensor))
                     # sess.run(v)
                     # exit()
-
                     break
+
+        if(lm_opt.freeze_model):
+            for v in tf.trainable_variables():
+                if "emb" in v.name:
+                    sess.run(tf.assign(v, lm_opt._emb))
+                    lm_opt._emb_var = v
+                elif "basic_lstm_cell/weights" in v.name:
+                    sess.run(tf.assign(v, lm_opt._lstm_w))
+                    lm_opt._lstm_w_var = v
+                elif "basic_lstm_cell/biases" in v.name:
+                    sess.run(tf.assign(v, lm_opt._lstm_w))
+                    lm_opt._lstm_b_var = v
+                elif "softmax_w" in v.name:
+                    sess.run(tf.assign(v, lm_opt._softmax_w))
+                    lm_opt._softmax_w_var = v
+                elif "softmax_b" in v.name:
+                    sess.run(tf.assign(v, lm_opt._softmax_b))
+                    lm_opt._softmax_b_var = v
 
         saver = tf.train.Saver()
         states = {}
@@ -112,8 +133,9 @@ def main(lm_opt):
                 shared_indexes = cPickle.load(open("models/r1.0/gen_m1/index_m1_m2_t1_46.6641693115_t2_6.87459030151.pickle", "r"))
                 for index in shared_indexes:
                     if(np.array_equal(sess.run(lm_opt._embedding_var)[:, index], opt.parameter_masks["LM/emb_0:0"][:, index]) != True):
-                        print "something went horribly wrong"
+                        logger.info("SPECIAL TRAINING - something went horribly wrong")
                         exit()
+                logger.info("SPECIAL TRAINING - Successful")
 
             done_training = run_post_epoch(
                 lm_train_ppl, lm_valid_ppl, lm_state, lm_opt,
@@ -132,7 +154,10 @@ if __name__ == "__main__":
     parser = common_utils.get_common_argparse()
 
     parser.add_argument('--special_train', action='store_true',
-                        help='train using masks')
+                        help='Trains using masks')
+
+    parser.add_argument('--freeze_model', action='store_true',
+                        help='Freeze whole model')
 
     args = parser.parse_args()
     opt = common_utils.Bunch.default_model_options()
@@ -152,7 +177,7 @@ if __name__ == "__main__":
         opt.freeze_masks = cPickle.load(open("models/r1.0/gen_m1/freeze_m1_m2_t1_46.6641693115_t2_6.87459030151.pickle", "r"))
 
         temp = np.random.uniform(-.1 , .1, [10000, 300])
-        opt.initialization = np.multiply(temp, opt.freeze_masks["LM/emb_0:0"]) + opt.parameter_masks["LM/emb_0:0"]
+        opt.initialization = np.multiply(temp, opt.freeze_masks["LM/emb:0"]) + opt.parameter_masks["LM/emb:0"]
 
         # print opt.initialization[:, 100] - opt.parameter_masks["LM/emb_0:0"][:, 100]
         # print opt.initialization[:, 46] - opt.parameter_masks["LM/emb_0:0"][:, 46]
@@ -161,6 +186,17 @@ if __name__ == "__main__":
 
         logger.info('Loading Masks completed')
         # exit()
+
+    if(opt.freeze_model):
+        opt.parameter_masks = cPickle.load(open("../../data/r1.0/models/m1/params.pickle", "r"))
+        opt.freeze_masks = cPickle.load(open("../../data/r1.0/masks/zeros/freeze_m1.pickle", "r"))
+
+        opt._emb = opt.parameter_masks["LM/emb:0"]
+        opt._lstm_w = opt.parameter_masks["LM/rnn/rnn/multi_rnn_cell/cell_0/basic_lstm_cell/weights:0"]
+        opt._lstm_b = opt.parameter_masks["LM/rnn/rnn/multi_rnn_cell/cell_0/basic_lstm_cell/biases:0"]
+        opt._softmax_w = opt.parameter_masks["LM/softmax_w:0"]
+        opt._softmax_b = opt.parameter_masks["LM/softmax_b:0"]
+
 
     main(opt)
     logger.info('Total time: {}s'.format(time.time() - global_time))
