@@ -49,13 +49,10 @@ def main(lm_opt):
 
             if(lm_opt.special_train):
                 logger.info("Special train")
-                # freeze_tensor = tf.constant(lm_opt.freeze_masks["LM/emb_0:0"])
-                # freeze_tensor = tf.cast(freeze_tensor, tf.float32)
-                # lm_opt.freeze_tensor = freeze_tensor
                 lm_train_op, lm_lr_var = lm.train_op_mod(lm_train, lm_opt)
 
             elif(lm_opt.freeze_model):
-                logger.info("Whole model frozen train")
+                logger.info("Trainining completely frozen model - TEST")
                 lm_train_op, lm_lr_var = lm.train_op_frozen(lm_train, lm_opt)
 
             else:
@@ -66,7 +63,6 @@ def main(lm_opt):
             lm_valid = lm.LM(lm_opt, is_training=False)
         logger.debug('Trainable variables:')
         for v in tf.trainable_variables():
-            # logger.info("- {} {} {}".format(v.name, v.get_shape(), v.device))
             logger.debug("- {} {} {}".format(v.name, v.get_shape(), v.device))
         logger.info('Initializing vairables...')
         sess.run(tf.global_variables_initializer())
@@ -136,6 +132,30 @@ def main(lm_opt):
                         logger.info("SPECIAL TRAINING - something went horribly wrong")
                         exit()
                 logger.info("SPECIAL TRAINING - Successful")
+
+            if (lm_opt.freeze_model):
+
+                if(np.array_equal(sess.run(lm_opt._emb_var), lm_opt._emb) != True):
+                    logger.info("MODEL FREEZE - _emb freeze went horribly wrong")
+                    exit()
+
+                if(np.array_equal(sess.run(lm_opt._lstm_w_var), lm_opt._lstm_w) != True):
+                    logger.info("MODEL FREEZE - _lstm_w freeze went horribly wrong")
+                    exit()
+
+                if(np.array_equal(sess.run(lm_opt._lstm_b_var), lm_opt._lstm_b) != True):
+                    logger.info("MODEL FREEZE - _lstm_b freeze went horribly wrong")
+                    exit()
+
+                if(np.array_equal(sess.run( lm_opt._softmax_w_var), lm_opt._softmax_w) != True):
+                    logger.info("MODEL FREEZE - _softmax_w freeze went horribly wrong")
+                    exit()
+
+                if(np.array_equal(sess.run( lm_opt._softmax_b_var), lm_opt._softmax_b) != True):
+                    logger.info("MODEL FREEZE - _softmax_b freeze went horribly wrong")
+                    exit()
+
+                logger.info("MODEL FREEZE - Successful")
 
             done_training = run_post_epoch(
                 lm_train_ppl, lm_valid_ppl, lm_state, lm_opt,
