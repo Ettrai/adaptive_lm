@@ -134,7 +134,7 @@ def main(lm_opt):
 
                 if (lm_opt.special_train):
                     shared_indexes = cPickle.load(
-                        open("models/r1.0/gen_m1/index_m1_m2_t1_46.6641693115_t2_6.87459030151.pickle", "r"))
+                        open("../data/r1.0/masks/cosine/mapping_m1_m2_t0.969863444299.pickle", "r"))
                     for index in shared_indexes:
                         if (np.array_equal(sess.run(lm_opt._embedding_var)[:, index],
                                            opt.parameter_masks["LM/emb_0:0"][:, index]) != True):
@@ -197,8 +197,8 @@ if __name__ == "__main__":
     if(opt.special_train):
         # print "Hello"
         logger.info('Loading Masks ')
-        opt.parameter_masks =  cPickle.load(open("models/r1.0/gen_m1/parameters_m1_m2_t1_46.6641693115_t2_6.87459030151.pickle", "r"))
-        opt.freeze_masks = cPickle.load(open("models/r1.0/gen_m1/freeze_m1_m2_t1_46.6641693115_t2_6.87459030151.pickle", "r"))
+        opt.parameter_masks =  cPickle.load(open("../data/r1.0/masks/cosine/parameters_m1_m2_t0.969863444299.pickle", "r"))
+        opt.freeze_masks = cPickle.load(open("../data/r1.0/masks/cosine/freeze_m1_m2_t0.969863444299.pickle", "r"))
 
         temp = np.random.uniform(-.1 , .1, [10000, 300])
         opt.initialization = np.multiply(temp, opt.freeze_masks["LM/emb:0"]) + opt.parameter_masks["LM/emb:0"]
@@ -206,10 +206,7 @@ if __name__ == "__main__":
         # print opt.initialization[:, 100] - opt.parameter_masks["LM/emb_0:0"][:, 100]
         # print opt.initialization[:, 46] - opt.parameter_masks["LM/emb_0:0"][:, 46]
 
-        # exit()
-
         logger.info('Loading Masks completed')
-        # exit()
 
     if(opt.freeze_model):
 

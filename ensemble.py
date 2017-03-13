@@ -7,9 +7,11 @@ import numpy as np
 
 import test
 
+data_path = "../data/r1.0/"
+
 def gather_model_outputs(model_name):
 
-    models_path = "models/r1.0/"
+    models_path = data_path + "models/"
     # models_names = ["m1" , "m2" , "m3", "m4"]
 
     opt.num_steps = 1
@@ -26,7 +28,7 @@ def gather_model_outputs(model_name):
 
 
 def ensemble_models_outputs(arguments):
-    models_path = "models/r1.0/"
+    models_path = data_path + "models/"
     models_names = arguments.split(',')
 
     # models_names = ["m1" , "m2" , "m3", "m4"]
