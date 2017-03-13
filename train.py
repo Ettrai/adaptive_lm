@@ -125,45 +125,49 @@ def main(lm_opt):
             logger.info('----------------------------------')
             logger.info('LM post epoch routine...')
 
-            if (lm_opt.special_train):
-                shared_indexes = cPickle.load(open("models/r1.0/gen_m1/index_m1_m2_t1_46.6641693115_t2_6.87459030151.pickle", "r"))
-                for index in shared_indexes:
-                    if(np.array_equal(sess.run(lm_opt._embedding_var)[:, index], opt.parameter_masks["LM/emb_0:0"][:, index]) != True):
-                        logger.info("SPECIAL TRAINING - something went horribly wrong")
-                        exit()
-                logger.info("SPECIAL TRAINING - Successful")
-
-            if (lm_opt.freeze_model):
-
-                if(np.array_equal(sess.run(lm_opt._emb_var), lm_opt._emb) != True):
-                    logger.info("MODEL FREEZE - _emb freeze went horribly wrong")
-                    exit()
-
-                if(np.array_equal(sess.run(lm_opt._lstm_w_var), lm_opt._lstm_w) != True):
-                    logger.info("MODEL FREEZE - _lstm_w freeze went horribly wrong")
-                    exit()
-
-                if(np.array_equal(sess.run(lm_opt._lstm_b_var), lm_opt._lstm_b) != True):
-                    logger.info("MODEL FREEZE - _lstm_b freeze went horribly wrong")
-                    exit()
-
-                if(np.array_equal(sess.run( lm_opt._softmax_w_var), lm_opt._softmax_w) != True):
-                    logger.info("MODEL FREEZE - _softmax_w freeze went horribly wrong")
-                    exit()
-
-                if(np.array_equal(sess.run( lm_opt._softmax_b_var), lm_opt._softmax_b) != True):
-                    logger.info("MODEL FREEZE - _softmax_b freeze went horribly wrong")
-                    exit()
-
-                logger.info("MODEL FREEZE - Successful")
-
             done_training = run_post_epoch(
                 lm_train_ppl, lm_valid_ppl, lm_state, lm_opt,
                 sess=sess, saver=saver,
                 best_prefix="best_lm", latest_prefix="latest_lm")
             logger.info('- Epoch time: {}s'.format(time.time() - epoch_time))
             if done_training:
+
+                if (lm_opt.special_train):
+                    shared_indexes = cPickle.load(
+                        open("models/r1.0/gen_m1/index_m1_m2_t1_46.6641693115_t2_6.87459030151.pickle", "r"))
+                    for index in shared_indexes:
+                        if (np.array_equal(sess.run(lm_opt._embedding_var)[:, index],
+                                           opt.parameter_masks["LM/emb_0:0"][:, index]) != True):
+                            logger.info("SPECIAL TRAINING - something went horribly wrong")
+                            exit()
+                    logger.info("SPECIAL TRAINING - Successful")
+
+                if (lm_opt.freeze_model):
+
+                    if (np.array_equal(sess.run(lm_opt._emb_var), lm_opt._emb) != True):
+                        logger.info("MODEL FREEZE - _emb freeze went horribly wrong")
+                        exit()
+
+                    if (np.array_equal(sess.run(lm_opt._lstm_w_var), lm_opt._lstm_w) != True):
+                        logger.info("MODEL FREEZE - _lstm_w freeze went horribly wrong")
+                        exit()
+
+                    if (np.array_equal(sess.run(lm_opt._lstm_b_var), lm_opt._lstm_b) != True):
+                        logger.info("MODEL FREEZE - _lstm_b freeze went horribly wrong")
+                        exit()
+
+                    if (np.array_equal(sess.run(lm_opt._softmax_w_var), lm_opt._softmax_w) != True):
+                        logger.info("MODEL FREEZE - _softmax_w freeze went horribly wrong")
+                        exit()
+
+                    if (np.array_equal(sess.run(lm_opt._softmax_b_var), lm_opt._softmax_b) != True):
+                        logger.info("MODEL FREEZE - _softmax_b freeze went horribly wrong")
+                        exit()
+
+                    logger.info("MODEL FREEZE - Successful")
+
                 break
+
         logger.info('Done training at epoch {}'.format(lm_state.epoch + 1))
 
 
