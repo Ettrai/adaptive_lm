@@ -90,7 +90,7 @@ def main(lm_opt):
                     sess.run(tf.assign(v, lm_opt._lstm_w))
                     lm_opt._lstm_w_var = v
                 elif "basic_lstm_cell/biases" in v.name:
-                    sess.run(tf.assign(v, lm_opt._lstm_w))
+                    sess.run(tf.assign(v, lm_opt._lstm_b))
                     lm_opt._lstm_b_var = v
                 elif "softmax_w" in v.name:
                     sess.run(tf.assign(v, lm_opt._softmax_w))
