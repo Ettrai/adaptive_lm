@@ -137,7 +137,7 @@ def main(lm_opt):
                         open("../data/r1.0/masks/cosine/mapping_m1_m2_t0.969863444299.pickle", "r"))
                     for index in shared_indexes:
                         if (np.array_equal(sess.run(lm_opt._embedding_var)[:, index],
-                                           opt.parameter_masks["LM/emb_0:0"][:, index]) != True):
+                                           opt.parameter_masks["LM/emb:0"][:, index]) != True):
                             logger.info("SPECIAL TRAINING - something went horribly wrong")
                             exit()
                     logger.info("SPECIAL TRAINING - Successful")

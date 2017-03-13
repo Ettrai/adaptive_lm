@@ -73,23 +73,30 @@ def train_op_frozen(model, opt):
     for g,v in g_v_pairs:
         tvars.append(v)
 
+        print "Variable", v.name, "Gradient", g.name
+
         if "emb" in v.name:
+            print "Freezing emb"
             mask = tf.constant(opt.freeze_masks["LM/emb:0"], dtype=tf.float32)
             grads.append(tf.multiply(g, mask))
 
         elif "basic_lstm_cell/weights" in v.name:
+            print "Freezing basic_lstm_cell/weights"
             mask = tf.constant(opt.freeze_masks["LM/rnn/rnn/multi_rnn_cell/cell_0/basic_lstm_cell/weights:0"], dtype=tf.float32)
             grads.append(tf.multiply(g, mask))
 
         elif "basic_lstm_cell/biases" in v.name:
+            print "Freezing basic_lstm_cell/biases"
             mask = tf.constant(opt.freeze_masks["LM/rnn/rnn/multi_rnn_cell/cell_0/basic_lstm_cell/biases:0"], dtype=tf.float32)
             grads.append(tf.multiply(g, mask))
 
         elif "softmax_w" in v.name:
+            print "Freezing softmax_w"
             mask = tf.constant(opt.freeze_masks["LM/softmax_w:0"], dtype=tf.float32)
             grads.append(tf.multiply(g, mask))
 
         elif "softmax_b" in v.name:
+            print "Freezing softmax_b"
             mask = tf.constant(opt.freeze_masks["LM/softmax_b:0"], dtype=tf.float32)
             grads.append(tf.multiply(g, mask))
 
