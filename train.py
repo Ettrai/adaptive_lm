@@ -208,8 +208,10 @@ if __name__ == "__main__":
         # exit()
 
     if(opt.freeze_model):
-        opt.parameter_masks = cPickle.load(open("../../data/r1.0/models/m1/params.pickle", "r"))
-        opt.freeze_masks = cPickle.load(open("../../data/r1.0/masks/zeros/freeze_m1.pickle", "r"))
+
+        logger.info('Loading Masks ')
+        opt.parameter_masks = cPickle.load(open("../data/r1.0/models/m1/params.pickle", "r"))
+        opt.freeze_masks = cPickle.load(open("../data/r1.0/masks/zeros/freeze_m1.pickle", "r"))
 
         opt._emb = opt.parameter_masks["LM/emb:0"]
         opt._lstm_w = opt.parameter_masks["LM/rnn/rnn/multi_rnn_cell/cell_0/basic_lstm_cell/weights:0"]
@@ -217,6 +219,7 @@ if __name__ == "__main__":
         opt._softmax_w = opt.parameter_masks["LM/softmax_w:0"]
         opt._softmax_b = opt.parameter_masks["LM/softmax_b:0"]
 
+        logger.info('Loading Masks completed')
 
     main(opt)
     logger.info('Total time: {}s'.format(time.time() - global_time))
