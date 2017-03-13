@@ -86,11 +86,11 @@ def train_op_frozen(model, opt):
             grads.append(tf.multiply(g, mask))
 
         elif "softmax_w" in v.name:
-            mask = tf.constant(opt.freeze_masks["softmax_w:0"], dtype=tf.float32)
+            mask = tf.constant(opt.freeze_masks["LM/softmax_w:0"], dtype=tf.float32)
             grads.append(tf.multiply(g, mask))
 
         elif "softmax_b" in v.name:
-            mask = tf.constant(opt.freeze_masks["softmax_b:0"], dtype=tf.float32)
+            mask = tf.constant(opt.freeze_masks["LM/softmax_b:0"], dtype=tf.float32)
             grads.append(tf.multiply(g, mask))
 
         else:
