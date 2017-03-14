@@ -87,6 +87,10 @@ if __name__ == "__main__":
                         action='store_true', help='use emb from shared_emb scope')
     parser.set_defaults(shared_emb=False)
 
+    parser.add_argument('--output_pickle_file', type=str,
+                        default='params.pickle',
+                        help=('Output pickle file for a dictionary of parameters'))
+
     args = parser.parse_args()
     opt = common_utils.Bunch.default_model_options()
     opt.update_from_ns(args)
