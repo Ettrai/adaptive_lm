@@ -1,4 +1,3 @@
-import paramiko
 import common_utils
 import logging
 import time
