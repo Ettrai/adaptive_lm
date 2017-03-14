@@ -1,19 +1,14 @@
-import common_utils
-import logging
 import time
-import csv
+import argparse
+import os
 
-import numpy as np
-
-import train
-import get_params
-import test
-
+# Email utils
 import smtplib
 import socket
 from email.mime.text import MIMEText
 
-import os
+# Bunch class utils
+import common_utils
 
 def setup_folders():
 
@@ -26,31 +21,6 @@ def setup_folders():
 
     if not os.path.exists(directory):
         os.makedirs(directory)
-
-
-def train_network():
-    opt.emb_size = 300
-    opt.state_size = 300
-    opt.max_grad_nor = 5.0
-    opt.gpu=True
-    opt.log_file_path = opt.new_model_path + "/training.log"
-    opt.output_dir = opt.new_model_path
-    train.main(opt)
-
-def dump_parameters():
-    opt.output_dir = opt.new_model_path
-    get_params.main(opt)
-
-def test_model():
-    opt.num_steps = 1
-    opt.batch_size = 1
-    opt.emb_size = 300
-    opt.state_size = 300
-    opt.max_grad_nor = 5.0
-    opt.out_token_loss_file = "model_output.tsv"
-    opt.gpu=True
-    opt.output_dir = opt.new_model_path
-    test.main()
 
 def send_email(receiver):
 
@@ -75,51 +45,43 @@ if __name__ == "__main__":
     print
 
     global_time = time.time()
-    parser = common_utils.get_common_argparse()
+    parser = argparse.ArgumentParser()
 
     parser.add_argument('--new_model_path', type=str,default=None, help='Train and generates output of a new model')
-
-    parser.add_argument('--vocab_ppl_file', type=str,
-                        default=None,
-                        help='output vocab ppl to a file')
-
-    parser.add_argument('--shared_emb', dest='shared_emb',
-                        action='store_true', help='use emb from shared_emb scope')
-    parser.set_defaults(shared_emb=False)
-
-    parser.add_argument('--output_pickle_file', type=str,
-                        default='params.pickle',
-                        help=('Output pickle file for a dictionary of parameters'))
 
     args = parser.parse_args()
     opt = common_utils.Bunch.default_model_options()
     opt.update_from_ns(args)
 
-    logger = common_utils.get_logger(opt.log_file_path)
-    if opt.debug:
-        logger.setLevel(logging.DEBUG)
-    else:
-        logger.setLevel(logging.INFO)
-
-    opt.logger = logger
-
     if(opt.new_model_path == None):
         print "No model path provided, exiting"
         exit()
 
-    logger.info("Setting up model folder")
+    print "Setting up folders"
     setup_folders()
-    logger.info("Training new model")
-    train_network()
-    logger.info("Dumping new model parameters")
-    dump_parameters()
-    logger.info("Testing and generating model outputs")
-    test_model()
 
-    logger.info("Sending email")
+    print "Training new model"
+    common_arguments = "--emb_size 300 "
+    common_arguments+= "--state_size 300 "
+    common_arguments+= "--max_grad_nor 5.0 "
+    common_arguments+= "--output_dir " + opt.new_model_path + " "
+    common_arguments+= "--gpu "
+    log_file_path = "--log_file_path " + opt.new_model_path + "/training.log"
+    os.system("python train.py " + common_arguments + log_file_path)
+
+    print "Dumping new model parameters"
+    os.system("python get_params.py " + common_arguments)
+
+    num_steps  = "--num_steps 1 "
+    batch_size = "--batch_size 1 "
+    out_token_loss_file = "--out_token_loss_file model_output.tsv"
+    os.system("python test.py " + num_steps + batch_size + common_arguments)
+
+    print "Sending email"
     send_email("ettrai@u.northwestern.edu")
 
     print
-    logger.info('Total time: {}s'.format(time.time() - global_time))
+    print 'Total time: {}s'.format(time.time() - global_time)
     print
+
 
