@@ -34,7 +34,7 @@ def train_network():
     opt.state_size = 300
     opt.max_grad_nor = 5.0
     opt.gpu=True
-    opt.log_file_path = opt.new_model_path +  "/training.log"
+    opt.log_file_path = opt.new_model_path + "/training.log"
     opt.output_dir = opt.new_model_path
     train.main(opt)
 
@@ -104,9 +104,6 @@ if __name__ == "__main__":
         print "No model path provided, exiting"
         exit()
 
-    send_email("ettrai@u.northwestern.edu")
-    exit()
-
     logger.info("Setting up model folder")
     setup_folders()
     logger.info("Training new model")
@@ -115,6 +112,9 @@ if __name__ == "__main__":
     dump_parameters()
     logger.info("Testing and generating model outputs")
     test_model()
+
+    logger.info("Sending email")
+    send_email("ettrai@u.northwestern.edu")
 
     print
     logger.info('Total time: {}s'.format(time.time() - global_time))
