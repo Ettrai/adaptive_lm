@@ -20,6 +20,7 @@ import data_utils
 from exp_utils import *
 
 def main(opt):
+    logger = opt.logger
     with tf.Session() as sess:
         logger.info('Creating model...')
         init_scale = opt.init_scale
@@ -62,5 +63,6 @@ if __name__ == "__main__":
     else:
         logger.setLevel(logging.INFO)
     logger.info('Configurations:\n{}'.format(opt.__repr__()))
+    opt.logger = logger
     params = main(opt)
     logger.info('Total time: {}s'.format(time.time() - global_time))

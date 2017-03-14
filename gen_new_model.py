@@ -39,7 +39,7 @@ def train_network():
 
 def dump_parameters():
     opt.output_dir = opt.new_model_path
-    get_params()
+    get_params.main(opt)
 
 def test_model():
     opt.num_steps = 1
