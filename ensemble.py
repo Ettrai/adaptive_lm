@@ -88,6 +88,7 @@ if __name__ == "__main__":
                         help='output vocab ppl to a file')
     parser.add_argument('--shared_emb', dest='shared_emb',
                         action='store_true', help='use emb from shared_emb scope')
+
     parser.set_defaults(shared_emb=False)
     args = parser.parse_args()
     opt = common_utils.Bunch.default_model_options()

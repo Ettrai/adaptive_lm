@@ -30,6 +30,37 @@ import data_utils
 from exp_utils import *
 
 def main(lm_opt):
+
+    logger = lm_opt.logger
+
+    if(lm_opt.special_train):
+        # print "Hello"
+        logger.info('Loading Masks ')
+        lm_opt.parameter_masks =  cPickle.load(open("../data/r1.0/masks/cosine/parameters_m1_m2_t0.969863444299.pickle", "r"))
+        lm_opt.freeze_masks = cPickle.load(open("../data/r1.0/masks/cosine/freeze_m1_m2_t0.969863444299.pickle", "r"))
+
+        temp = np.random.uniform(-.1 , .1, [10000, 300])
+        lm_opt.initialization = np.multiply(temp, lm_opt.freeze_masks["LM/emb:0"]) + lm_opt.parameter_masks["LM/emb:0"]
+
+        # print opt.initialization[:, 100] - opt.parameter_masks["LM/emb_0:0"][:, 100]
+        # print opt.initialization[:, 46] - opt.parameter_masks["LM/emb_0:0"][:, 46]
+
+        logger.info('Loading Masks completed')
+
+    if(lm_opt.freeze_model):
+
+        logger.info('Loading Masks ')
+        lm_opt.parameter_masks = cPickle.load(open("../data/r1.0/models/m1/params.pickle", "r"))
+        lm_opt.freeze_masks = cPickle.load(open("../data/r1.0/masks/zeros/freeze_m1.pickle", "r"))
+
+        lm_opt._emb = lm_opt.parameter_masks["LM/emb:0"]
+        lm_opt._lstm_w = lm_opt.parameter_masks["LM/rnn/rnn/multi_rnn_cell/cell_0/basic_lstm_cell/weights:0"]
+        lm_opt._lstm_b = lm_opt.parameter_masks["LM/rnn/rnn/multi_rnn_cell/cell_0/basic_lstm_cell/biases:0"]
+        lm_opt._softmax_w = lm_opt.parameter_masks["LM/softmax_w:0"]
+        lm_opt._softmax_b = lm_opt.parameter_masks["LM/softmax_b:0"]
+
+        logger.info('Loading Masks completed')
+
     model_prefix = ['latest_lm']
     dataset = ['train', 'valid']
     lm_data, lm_vocab = load_datasets(lm_opt, dataset=dataset)
@@ -176,13 +207,6 @@ def main(lm_opt):
 if __name__ == "__main__":
     global_time = time.time()
     parser = common_utils.get_common_argparse()
-
-    parser.add_argument('--special_train', action='store_true',
-                        help='Trains using masks')
-
-    parser.add_argument('--freeze_model', action='store_true',
-                        help='Freeze whole model')
-
     args = parser.parse_args()
     opt = common_utils.Bunch.default_model_options()
     opt.update_from_ns(args)
@@ -193,34 +217,6 @@ if __name__ == "__main__":
     else:
         logger.setLevel(logging.INFO)
     logger.info('Configurations:\n{}'.format(opt.__repr__()))
-
-    if(opt.special_train):
-        # print "Hello"
-        logger.info('Loading Masks ')
-        opt.parameter_masks =  cPickle.load(open("../data/r1.0/masks/cosine/parameters_m1_m2_t0.969863444299.pickle", "r"))
-        opt.freeze_masks = cPickle.load(open("../data/r1.0/masks/cosine/freeze_m1_m2_t0.969863444299.pickle", "r"))
-
-        temp = np.random.uniform(-.1 , .1, [10000, 300])
-        opt.initialization = np.multiply(temp, opt.freeze_masks["LM/emb:0"]) + opt.parameter_masks["LM/emb:0"]
-
-        # print opt.initialization[:, 100] - opt.parameter_masks["LM/emb_0:0"][:, 100]
-        # print opt.initialization[:, 46] - opt.parameter_masks["LM/emb_0:0"][:, 46]
-
-        logger.info('Loading Masks completed')
-
-    if(opt.freeze_model):
-
-        logger.info('Loading Masks ')
-        opt.parameter_masks = cPickle.load(open("../data/r1.0/models/m1/params.pickle", "r"))
-        opt.freeze_masks = cPickle.load(open("../data/r1.0/masks/zeros/freeze_m1.pickle", "r"))
-
-        opt._emb = opt.parameter_masks["LM/emb:0"]
-        opt._lstm_w = opt.parameter_masks["LM/rnn/rnn/multi_rnn_cell/cell_0/basic_lstm_cell/weights:0"]
-        opt._lstm_b = opt.parameter_masks["LM/rnn/rnn/multi_rnn_cell/cell_0/basic_lstm_cell/biases:0"]
-        opt._softmax_w = opt.parameter_masks["LM/softmax_w:0"]
-        opt._softmax_b = opt.parameter_masks["LM/softmax_b:0"]
-
-        logger.info('Loading Masks completed')
 
     main(opt)
     logger.info('Total time: {}s'.format(time.time() - global_time))

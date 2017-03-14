@@ -114,6 +114,13 @@ def get_tf_sess_config(opt):
 
 def get_common_argparse():
     parser = argparse.ArgumentParser()
+
+    parser.add_argument('--special_train', action='store_true',
+                        help='Trains using masks')
+
+    parser.add_argument('--freeze_model', action='store_true',
+                        help='Freeze whole model')
+
     parser.add_argument('--gpu', dest='gpu',
                         action='store_true')
     parser.set_defaults(gpu=False)
