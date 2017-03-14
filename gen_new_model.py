@@ -12,7 +12,7 @@ import common_utils
 
 def setup_folders():
 
-    directory = opt.output_dir = opt.new_model_path
+    directory = opt.new_model_path
 
     if os.path.exists(directory):
         print directory + " exists already, assuming wrong parameters"
@@ -26,14 +26,20 @@ def send_email(receiver):
 
     hostname  = socket.gethostname()
 
-    text = "Generation of a new model on " + hostname + " completed. "
-    text+= "The data about model " + opt.new_model_path + " are now available"
+    model_name = opt.new_model_path.split("/")
+    model_name = model_name[-1]
+
+    text = "Generation of a new model on " + hostname + " completed. \n"
+    text+= "The data about model \"" + model_name + "\" are now available. \n"
+    text+= "You can find the model in \"" +  opt.new_model_path + "\""
+
+    print text
 
     msg = MIMEText(text)
 
     sender = "noreply@" + hostname
 
-    msg['Subject'] = "Gen Model on " + hostname + " completed"
+    msg['Subject'] = "Model '" + model_name + "' on " + hostname + " has been generated"
     msg['From'] = "noreply@" + hostname
     msg['To'] = receiver
 
@@ -72,10 +78,11 @@ if __name__ == "__main__":
     print "Dumping new model parameters"
     os.system("python get_params.py " + common_arguments)
 
+    print "Testing generated model"
     num_steps  = "--num_steps 1 "
     batch_size = "--batch_size 1 "
     out_token_loss_file = "--out_token_loss_file model_output.tsv"
-    os.system("python test.py " + num_steps + batch_size + common_arguments)
+    os.system("python test.py " + num_steps + batch_size + out_token_loss_file +  common_arguments)
 
     print "Sending email"
     send_email("ettrai@u.northwestern.edu")
