@@ -81,8 +81,8 @@ if __name__ == "__main__":
     print "Testing generated model"
     num_steps  = "--num_steps 1 "
     batch_size = "--batch_size 1 "
-    out_token_loss_file = "--out_token_loss_file model_output.tsv"
-    os.system("python test.py " + num_steps + batch_size + out_token_loss_file +  common_arguments)
+    out_token_loss_file = "--out_token_loss_file model_output.tsv "
+    os.system("python test.py " + num_steps + batch_size + out_token_loss_file + common_arguments)
 
     print "Sending email"
     send_email("ettrai@u.northwestern.edu")
