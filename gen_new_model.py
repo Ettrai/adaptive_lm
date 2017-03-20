@@ -12,15 +12,16 @@ import common_utils
 
 def setup_folders():
 
-    directory = opt.new_model_path
+    new_model_path = opt.new_model_path
 
-    if os.path.exists(directory):
-        print directory + " exists already, assuming wrong parameters"
-        print "Exiting"
-        exit()
+    if os.path.exists(new_model_path):
+        if len(os.listdir(new_model_path)) > 0:
+            print new_model_path + " is not empty, assuming wrong parameters"
+            print "Exiting"
+            exit()
 
-    if not os.path.exists(directory):
-        os.makedirs(directory)
+    if not os.path.exists(new_model_path):
+        os.makedirs(new_model_path)
 
 def send_email(receiver):
 
@@ -51,7 +52,7 @@ if __name__ == "__main__":
     print
 
     global_time = time.time()
-    parser = argparse.ArgumentParser()
+    parser = common_utils.get_common_argparse()
 
     parser.add_argument('--new_model_path', type=str,default=None, help='Train and generates output of a new model')
 
@@ -72,8 +73,13 @@ if __name__ == "__main__":
     common_arguments+= "--max_grad_nor 5.0 "
     common_arguments+= "--output_dir " + opt.new_model_path + " "
     common_arguments+= "--gpu "
-    log_file_path = "--log_file_path " + opt.new_model_path + "/training.log"
-    os.system("python train.py " + common_arguments + log_file_path)
+    log_file_path = "--log_file_path " + opt.new_model_path + "/training.log "
+    special = ""
+    if(opt.special_train):
+        special = "--special_train "
+    if(opt.freeze_model):
+        special = "--freeze_model "
+    os.system("python train.py " + common_arguments + log_file_path + special)
 
     print "Dumping new model parameters"
     os.system("python get_params.py " + common_arguments)
