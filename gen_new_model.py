@@ -15,7 +15,7 @@ def setup_folders():
     new_model_path = opt.new_model_path
 
     if os.path.exists(new_model_path):
-        if len(os.listdir(new_model_path)) > 0:
+        if len(os.listdir(new_model_path)) > 0 and opt.force_path!=True:
             print new_model_path + " is not empty, assuming wrong parameters"
             print "Exiting"
             exit()
@@ -55,6 +55,7 @@ if __name__ == "__main__":
     parser = common_utils.get_common_argparse()
 
     parser.add_argument('--new_model_path', type=str,default=None, help='Train and generates output of a new model')
+    parser.add_argument('--force_path', action='store_true', help='Erases content of chosen folder if not empty')
 
     args = parser.parse_args()
     opt = common_utils.Bunch.default_model_options()
