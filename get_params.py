@@ -32,7 +32,7 @@ def main(opt):
         for v in tf.trainable_variables():
             logger.debug("- {} {} {}".format(v.name, v.get_shape(), v.device))
         saver = tf.train.Saver()
-        logger.info('Initializing vairables...')
+        logger.info('Initializing variables...')
         sess.run(tf.global_variables_initializer())
         saver = tf.train.Saver()
         state = common_utils.get_initial_training_state()
