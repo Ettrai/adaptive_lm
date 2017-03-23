@@ -37,8 +37,11 @@ def main(opt):
         saver = tf.train.Saver()
         state = common_utils.get_initial_training_state()
         state.learning_rate = opt.learning_rate
-        state, _ = resume_if_possible(opt, sess, saver, state, prefix="best")
-        logger.info('Writing vairables...')
+        state, check = resume_if_possible(opt, sess, saver, state, prefix="best_lm")
+        if(check == False):
+            logger.error('There is no model to dump the parameters from')
+            exit(-1)
+        logger.info('Writing variables...')
         trainable_vars = tf.trainable_variables()
         trainable_vals = sess.run(trainable_vars)
         params = {}
