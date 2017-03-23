@@ -36,11 +36,11 @@ def main(lm_opt):
     if(lm_opt.special_train):
         # print "Hello"
         logger.info('Loading Masks ')
-        lm_opt.parameter_masks =  cPickle.load(open("../data/r1.0/masks/cosine/parameters_m1_m2_t0.969863444299.pickle", "r"))
-        lm_opt.freeze_masks = cPickle.load(open("../data/r1.0/masks/cosine/freeze_m1_m2_t0.969863444299.pickle", "r"))
+        lm_opt.parameter_masks =  cPickle.load(open("../data/r1.0/masks/cosine/parameters_m1_m2_t0.755237960339.pickle", "r"))
+        lm_opt.freeze_masks = cPickle.load(open("../data/r1.0/masks/cosine/freeze_m1_m2_t0.755237960339.pickle", "r"))
 
-        temp = np.random.uniform(-.1 , .1, [10000, 300])
-        lm_opt.initialization = np.multiply(temp, lm_opt.freeze_masks["LM/emb:0"]) + lm_opt.parameter_masks["LM/emb:0"]
+        # temp = np.random.uniform(-.1 , .1, [10000, 300])
+        # lm_opt.initialization = np.multiply(temp, lm_opt.freeze_masks["LM/emb:0"]) + lm_opt.parameter_masks["LM/emb:0"]
 
         # print opt.initialization[:, 100] - opt.parameter_masks["LM/emb_0:0"][:, 100]
         # print opt.initialization[:, 46] - opt.parameter_masks["LM/emb_0:0"][:, 46]
@@ -95,14 +95,25 @@ def main(lm_opt):
         logger.debug('Trainable variables:')
         for v in tf.trainable_variables():
             logger.debug("- {} {} {}".format(v.name, v.get_shape(), v.device))
-        logger.info('Initializing vairables...')
+        logger.info('Initializing variables...')
         sess.run(tf.global_variables_initializer())
+        saver = tf.train.Saver()
+        states = {}
+        for p in model_prefix:
+            states[p] = common_utils.get_initial_training_state()
+        states, _ = resume_many_states(lm_opt.output_dir, sess,
+                                       saver, states, model_prefix)
+        lm_state = states[model_prefix[0]]
+        lm_state.learning_rate = lm_opt.learning_rate
 
         if(lm_opt.special_train):
             for v in tf.trainable_variables():
                 if "emb" in v.name:
-                    sess.run(tf.assign(v, lm_opt.initialization))
-                    lm_opt._embedding_var = v
+                    # np.multiply(temp, lm_opt.freeze_masks["LM/emb:0"]) + lm_opt.parameter_masks["LM/emb:0"]
+
+                    sess.run(tf.assign(v, tf.multiply(v,lm_opt.freeze_masks["LM/emb:0"])))
+                    sess.run(tf.assign(v, tf.add(v,lm_opt.parameter_masks["LM/emb:0"])))
+                    lm_opt._emb_var = v
                     # print sess.run(v)[:, 100] - opt.parameter_masks["LM/emb:0"][:, 100]
                     # v.assign(tf.multiply(v, freeze_tensor))
                     # parameter_tensor = tf.constant(lm_opt.paramter_masks["LM/emb_0:0"])
@@ -130,14 +141,8 @@ def main(lm_opt):
                     sess.run(tf.assign(v, lm_opt._softmax_b))
                     lm_opt._softmax_b_var = v
 
-        saver = tf.train.Saver()
-        states = {}
-        for p in model_prefix:
-            states[p] = common_utils.get_initial_training_state()
-        states, _ = resume_many_states(lm_opt.output_dir, sess,
-                                       saver, states, model_prefix)
-        lm_state = states[model_prefix[0]]
-        lm_state.learning_rate = lm_opt.learning_rate
+        shared_indexes = cPickle.load(
+            open("../data/r1.0/masks/cosine/mapping_m1_m2_t0.755237960339.pickle", "r"))
 
         logger.info('Start training loop:')
         logger.debug('\n' + common_utils.SUN_BRO())
@@ -148,6 +153,7 @@ def main(lm_opt):
             sess.run(tf.assign(lm_lr_var, lm_state.learning_rate))
             logger.info("- Traning LM with learning rate {}...".format(
                 lm_state.learning_rate))
+
             lm_train_ppl, _ = run_epoch(sess, lm_train, lm_data['train'],
                                         lm_opt, train_op=lm_train_op)
             logger.info('- Validating LM...')
@@ -162,44 +168,42 @@ def main(lm_opt):
                 best_prefix="best_lm", latest_prefix="latest_lm")
             logger.info('- Epoch time: {}s'.format(time.time() - epoch_time))
             if done_training:
-
-                if (lm_opt.special_train):
-                    shared_indexes = cPickle.load(
-                        open("../data/r1.0/masks/cosine/mapping_m1_m2_t0.969863444299.pickle", "r"))
-                    for index in shared_indexes:
-                        if (np.array_equal(sess.run(lm_opt._embedding_var)[:, index],
-                                           opt.parameter_masks["LM/emb:0"][:, index]) != True):
-                            logger.info("SPECIAL TRAINING - something went horribly wrong")
-                            exit()
-                    logger.info("SPECIAL TRAINING - Successful")
-
-                if (lm_opt.freeze_model):
-
-                    if (np.array_equal(sess.run(lm_opt._emb_var), lm_opt._emb) != True):
-                        logger.info("MODEL FREEZE - _emb freeze went horribly wrong")
-                        exit()
-
-                    if (np.array_equal(sess.run(lm_opt._lstm_w_var), lm_opt._lstm_w) != True):
-                        logger.info("MODEL FREEZE - _lstm_w freeze went horribly wrong")
-                        exit()
-
-                    if (np.array_equal(sess.run(lm_opt._lstm_b_var), lm_opt._lstm_b) != True):
-                        logger.info("MODEL FREEZE - _lstm_b freeze went horribly wrong")
-                        exit()
-
-                    if (np.array_equal(sess.run(lm_opt._softmax_w_var), lm_opt._softmax_w) != True):
-                        logger.info("MODEL FREEZE - _softmax_w freeze went horribly wrong")
-                        exit()
-
-                    if (np.array_equal(sess.run(lm_opt._softmax_b_var), lm_opt._softmax_b) != True):
-                        logger.info("MODEL FREEZE - _softmax_b freeze went horribly wrong")
-                        exit()
-
-                    logger.info("MODEL FREEZE - Successful")
-
                 break
 
         logger.info('Done training at epoch {}'.format(lm_state.epoch + 1))
+
+        if (lm_opt.freeze_model):
+
+            if (np.array_equal(sess.run(lm_opt._emb_var), lm_opt._emb) != True):
+                logger.info("MODEL FREEZE - _emb freeze went horribly wrong")
+                exit()
+
+            if (np.array_equal(sess.run(lm_opt._lstm_w_var), lm_opt._lstm_w) != True):
+                logger.info("MODEL FREEZE - _lstm_w freeze went horribly wrong")
+                exit()
+
+            if (np.array_equal(sess.run(lm_opt._lstm_b_var), lm_opt._lstm_b) != True):
+                logger.info("MODEL FREEZE - _lstm_b freeze went horribly wrong")
+                exit()
+
+            if (np.array_equal(sess.run(lm_opt._softmax_w_var), lm_opt._softmax_w) != True):
+                logger.info("MODEL FREEZE - _softmax_w freeze went horribly wrong")
+                exit()
+
+            if (np.array_equal(sess.run(lm_opt._softmax_b_var), lm_opt._softmax_b) != True):
+                logger.info("MODEL FREEZE - _softmax_b freeze went horribly wrong")
+                exit()
+
+            logger.info("MODEL FREEZE - Successful")
+
+        if (lm_opt.special_train):
+            for index in shared_indexes:
+                if(np.array_equal(sess.run(lm_opt._emb_var)[:, index], lm_opt.parameter_masks["LM/emb:0"][:, index]) != True):
+                    logger.info("SPECIAL TRAIN - _emb freeze went horribly wrong")
+                    exit()
+            logger.info("SPECIAL TRAIN - Successful")
+
+
 
 
 
