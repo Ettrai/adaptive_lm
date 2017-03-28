@@ -29,22 +29,33 @@ import common_utils
 import data_utils
 from exp_utils import *
 
+def find_mapping_index(data, sharing):
+   return data["similarity"].index(min(data["similarity"], key=lambda x: abs(x - sharing)))
+
 def main(lm_opt):
 
     logger = lm_opt.logger
 
     if(lm_opt.special_train):
-        # print "Hello"
-        logger.info('Loading Masks ')
-        lm_opt.parameter_masks =  cPickle.load(open("../data/r1.0/masks/cosine/parameters_m1_m2_t0.755237960339.pickle", "r"))
-        lm_opt.freeze_masks = cPickle.load(open("../data/r1.0/masks/cosine/freeze_m1_m2_t0.755237960339.pickle", "r"))
+        gen_from_models = lm_opt.gen_from_models.split(",")
+        gen_prefix = gen_from_models[0] + "_" + gen_from_models[1]
 
-        # temp = np.random.uniform(-.1 , .1, [10000, 300])
-        # lm_opt.initialization = np.multiply(temp, lm_opt.freeze_masks["LM/emb:0"]) + lm_opt.parameter_masks["LM/emb:0"]
+        similarity_data = cPickle.load(open("../data/r1.0/sharing/cosine/" + gen_prefix + "_emb_similarity.pickle", "r"))
 
-        # print opt.initialization[:, 100] - opt.parameter_masks["LM/emb_0:0"][:, 100]
-        # print opt.initialization[:, 46] - opt.parameter_masks["LM/emb_0:0"][:, 46]
+        #Retrieve the number of shared neurons and the threshold used
+        similarity_index = find_mapping_index(similarity_data, lm_opt.num_shared_neurons)
+        similarity_neurons = similarity_data["similarity"][similarity_index]
+        similarity_threshold = similarity_data["thresholds"][similarity_index]
+        similarity_config = gen_prefix + "_n" + str(similarity_neurons) + "_t" + str(similarity_threshold)
 
+        parameter_mask_file = "../data/r1.0/masks/cosine/parameters_" + similarity_config + ".pickle"
+        freeze_mask_file = "../data/r1.0/masks/cosine/freeze_" + similarity_config + ".pickle"
+        mapping_indexes_file = "../data/r1.0/masks/cosine/mapping_" + similarity_config + ".pickle"
+
+        logger.info('Loading Masks')
+        lm_opt.parameter_masks = cPickle.load(open(parameter_mask_file, "r"))
+        lm_opt.freeze_masks = cPickle.load(open(freeze_mask_file, "r"))
+        lm_opt.mapping_indexes = cPickle.load(open(mapping_indexes_file, "r"))
         logger.info('Loading Masks completed')
 
     if(lm_opt.freeze_model):
@@ -109,18 +120,9 @@ def main(lm_opt):
         if(lm_opt.special_train):
             for v in tf.trainable_variables():
                 if "emb" in v.name:
-                    # np.multiply(temp, lm_opt.freeze_masks["LM/emb:0"]) + lm_opt.parameter_masks["LM/emb:0"]
-
                     sess.run(tf.assign(v, tf.multiply(v,lm_opt.freeze_masks["LM/emb:0"])))
                     sess.run(tf.assign(v, tf.add(v,lm_opt.parameter_masks["LM/emb:0"])))
                     lm_opt._emb_var = v
-                    # print sess.run(v)[:, 100] - opt.parameter_masks["LM/emb:0"][:, 100]
-                    # v.assign(tf.multiply(v, freeze_tensor))
-                    # parameter_tensor = tf.constant(lm_opt.paramter_masks["LM/emb_0:0"])
-                    # parameter_tensor = tf.cast(parameter_tensor, tf.float32)
-                    # v.assign(tf.add(v, parameter_tensor))
-                    # sess.run(v)
-                    # exit()
                     break
 
         if(lm_opt.freeze_model):
@@ -140,9 +142,6 @@ def main(lm_opt):
                 elif "softmax_b" in v.name:
                     sess.run(tf.assign(v, lm_opt._softmax_b))
                     lm_opt._softmax_b_var = v
-
-        shared_indexes = cPickle.load(
-            open("../data/r1.0/masks/cosine/mapping_m1_m2_t0.755237960339.pickle", "r"))
 
         logger.info('Start training loop:')
         logger.debug('\n' + common_utils.SUN_BRO())
@@ -197,15 +196,11 @@ def main(lm_opt):
             logger.info("MODEL FREEZE - Successful")
 
         if (lm_opt.special_train):
-            for index in shared_indexes:
+            for index in lm_opt.mapping_indexes:
                 if(np.array_equal(sess.run(lm_opt._emb_var)[:, index], lm_opt.parameter_masks["LM/emb:0"][:, index]) != True):
                     logger.info("SPECIAL TRAIN - _emb freeze went horribly wrong")
                     exit()
             logger.info("SPECIAL TRAIN - Successful")
-
-
-
-
 
 
 if __name__ == "__main__":

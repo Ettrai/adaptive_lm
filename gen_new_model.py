@@ -69,30 +69,38 @@ if __name__ == "__main__":
     setup_folders()
 
     print "Training new model"
-    common_arguments = "--emb_size 300 "
-    common_arguments+= "--state_size 300 "
-    common_arguments+= "--max_grad_nor 5.0 "
+    common_arguments = "--emb_size " + str(opt.emb_size) + " "
+    common_arguments+= "--state_size " + str(opt.state_size) + " "
+    common_arguments+= "--max_grad_nor " + str(opt.max_grad_norm) + " "
     common_arguments+= "--output_dir " + opt.new_model_path + " "
     common_arguments+= "--gpu "
     log_file_path = "--log_file_path " + opt.new_model_path + "/training.log "
     special = ""
+
     if(opt.special_train):
         special = "--special_train "
+        special+= "--num_shared_neurons " + str(opt.num_shared_neurons) + " "
+        special+= "--gen_from_models " + opt.gen_from_models + " "
+
     if(opt.freeze_model):
         special = "--freeze_model "
-    os.system("python train.py " + common_arguments + log_file_path + special)
+
+    print "train.py command",common_arguments + log_file_path + special
+    # os.system("python train.py " + common_arguments + log_file_path + special)
 
     print "Dumping new model parameters"
-    os.system("python get_params.py " + common_arguments)
+    print "get_params.py command",common_arguments
+    # os.system("python get_params.py " + common_arguments)
 
     print "Testing generated model"
     num_steps  = "--num_steps 1 "
     batch_size = "--batch_size 1 "
     out_token_loss_file = "--out_token_loss_file model_output.tsv "
-    os.system("python test.py " + num_steps + batch_size + out_token_loss_file + common_arguments)
+    print"test.py command",num_steps + batch_size + out_token_loss_file + common_arguments
+    # os.system("python test.py " + num_steps + batch_size + out_token_loss_file + common_arguments)
 
     print "Sending email"
-    send_email("ettrai@u.northwestern.edu")
+    # send_email("ettrai@u.northwestern.edu")
 
     print
     print 'Total time: {}s'.format(time.time() - global_time)
