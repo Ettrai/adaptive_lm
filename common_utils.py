@@ -121,6 +121,10 @@ def get_common_argparse():
     parser.add_argument('--freeze_model', action='store_true',
                         help='Freeze whole model')
 
+    parser.add_argument('--gen_from_models', type=str, default=None, help='Generate new model from specified models')
+
+    parser.add_argument('--num_shared_neurons', type=int, default=None, help='Number of neurons to be shared')
+
     parser.add_argument('--gpu', dest='gpu',
                         action='store_true')
     parser.set_defaults(gpu=False)
