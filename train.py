@@ -59,10 +59,13 @@ def main(lm_opt):
         logger.info('Loading Masks completed')
 
     if(lm_opt.freeze_model):
-
         logger.info('Loading Masks ')
-        lm_opt.parameter_masks = cPickle.load(open("../data/r1.0/models/m1/params.pickle", "r"))
-        lm_opt.freeze_masks = cPickle.load(open("../data/r1.0/masks/zeros/freeze_m1.pickle", "r"))
+
+        # lm_opt.parameter_masks = cPickle.load(open("../data/r1.0/models/m1/params.pickle", "r"))
+        # lm_opt.freeze_masks = cPickle.load(open("../data/r1.0/masks/zeros/freeze_m1.pickle", "r"))
+
+        lm_opt.parameter_masks = cPickle.load(open("../data/r1.0/masks/window/parameters_m1_m2_t0.005.pickle", "r"))
+        lm_opt.freeze_masks = cPickle.load(open("../data/r1.0/masks/window/freeze_m1_m2_t0.005.pickle", "r"))
 
         lm_opt._emb = lm_opt.parameter_masks["LM/emb:0"]
         lm_opt._lstm_w = lm_opt.parameter_masks["LM/rnn/rnn/multi_rnn_cell/cell_0/basic_lstm_cell/weights:0"]
@@ -125,22 +128,45 @@ def main(lm_opt):
                     lm_opt._emb_var = v
                     break
 
+        # if(lm_opt.freeze_model):
+        #     for v in tf.trainable_variables():
+        #         if "emb" in v.name:
+        #             sess.run(tf.assign(v, lm_opt._emb))
+        #             lm_opt._emb_var = v
+        #         elif "basic_lstm_cell/weights" in v.name:
+        #             sess.run(tf.assign(v, lm_opt._lstm_w))
+        #             lm_opt._lstm_w_var = v
+        #         elif "basic_lstm_cell/biases" in v.name:
+        #             sess.run(tf.assign(v, lm_opt._lstm_b))
+        #             lm_opt._lstm_b_var = v
+        #         elif "softmax_w" in v.name:
+        #             sess.run(tf.assign(v, lm_opt._softmax_w))
+        #             lm_opt._softmax_w_var = v
+        #         elif "softmax_b" in v.name:
+        #             sess.run(tf.assign(v, lm_opt._softmax_b))
+        #             lm_opt._softmax_b_var = v
+
         if(lm_opt.freeze_model):
             for v in tf.trainable_variables():
                 if "emb" in v.name:
-                    sess.run(tf.assign(v, lm_opt._emb))
+                    sess.run(tf.assign(v, tf.multiply(v,lm_opt.freeze_masks["LM/emb:0"])))
+                    sess.run(tf.assign(v, tf.add(v,lm_opt.parameter_masks["LM/emb:0"])))
                     lm_opt._emb_var = v
                 elif "basic_lstm_cell/weights" in v.name:
-                    sess.run(tf.assign(v, lm_opt._lstm_w))
+                    sess.run(tf.assign(v, tf.multiply(v,lm_opt.freeze_masks["LM/rnn/rnn/multi_rnn_cell/cell_0/basic_lstm_cell/weights:0"])))
+                    sess.run(tf.assign(v, tf.add(v,lm_opt.parameter_masks["LM/rnn/rnn/multi_rnn_cell/cell_0/basic_lstm_cell/weights:0"])))
                     lm_opt._lstm_w_var = v
                 elif "basic_lstm_cell/biases" in v.name:
-                    sess.run(tf.assign(v, lm_opt._lstm_b))
+                    sess.run(tf.assign(v, tf.multiply(v,lm_opt.freeze_masks["LM/rnn/rnn/multi_rnn_cell/cell_0/basic_lstm_cell/biases:0"])))
+                    sess.run(tf.assign(v, tf.add(v,lm_opt.parameter_masks["LM/rnn/rnn/multi_rnn_cell/cell_0/basic_lstm_cell/biases:0"])))
                     lm_opt._lstm_b_var = v
                 elif "softmax_w" in v.name:
-                    sess.run(tf.assign(v, lm_opt._softmax_w))
+                    sess.run(tf.assign(v, tf.multiply(v,lm_opt.freeze_masks["LM/softmax_w:0"])))
+                    sess.run(tf.assign(v, tf.add(v,lm_opt.parameter_masks["LM/softmax_w:0"])))
                     lm_opt._softmax_w_var = v
                 elif "softmax_b" in v.name:
-                    sess.run(tf.assign(v, lm_opt._softmax_b))
+                    sess.run(tf.assign(v, tf.multiply(v,lm_opt.freeze_masks["LM/softmax_b:0"])))
+                    sess.run(tf.assign(v, tf.add(v,lm_opt.parameter_masks["LM/softmax_b:0"])))
                     lm_opt._softmax_b_var = v
 
         logger.info('Start training loop:')
@@ -171,36 +197,36 @@ def main(lm_opt):
 
         logger.info('Done training at epoch {}'.format(lm_state.epoch + 1))
 
-        if (lm_opt.freeze_model):
-
-            if (np.array_equal(sess.run(lm_opt._emb_var), lm_opt._emb) != True):
-                logger.info("MODEL FREEZE - _emb freeze went horribly wrong")
-                exit()
-
-            if (np.array_equal(sess.run(lm_opt._lstm_w_var), lm_opt._lstm_w) != True):
-                logger.info("MODEL FREEZE - _lstm_w freeze went horribly wrong")
-                exit()
-
-            if (np.array_equal(sess.run(lm_opt._lstm_b_var), lm_opt._lstm_b) != True):
-                logger.info("MODEL FREEZE - _lstm_b freeze went horribly wrong")
-                exit()
-
-            if (np.array_equal(sess.run(lm_opt._softmax_w_var), lm_opt._softmax_w) != True):
-                logger.info("MODEL FREEZE - _softmax_w freeze went horribly wrong")
-                exit()
-
-            if (np.array_equal(sess.run(lm_opt._softmax_b_var), lm_opt._softmax_b) != True):
-                logger.info("MODEL FREEZE - _softmax_b freeze went horribly wrong")
-                exit()
-
-            logger.info("MODEL FREEZE - Successful")
-
-        if (lm_opt.special_train):
-            for index in lm_opt.mapping_indexes:
-                if(np.array_equal(sess.run(lm_opt._emb_var)[:, index], lm_opt.parameter_masks["LM/emb:0"][:, index]) != True):
-                    logger.info("SPECIAL TRAIN - _emb freeze went horribly wrong")
-                    exit()
-            logger.info("SPECIAL TRAIN - Successful")
+        # if (lm_opt.freeze_model):
+        #
+        #     if (np.array_equal(sess.run(lm_opt._emb_var), lm_opt._emb) != True):
+        #         logger.info("MODEL FREEZE - _emb freeze went horribly wrong")
+        #         exit()
+        #
+        #     if (np.array_equal(sess.run(lm_opt._lstm_w_var), lm_opt._lstm_w) != True):
+        #         logger.info("MODEL FREEZE - _lstm_w freeze went horribly wrong")
+        #         exit()
+        #
+        #     if (np.array_equal(sess.run(lm_opt._lstm_b_var), lm_opt._lstm_b) != True):
+        #         logger.info("MODEL FREEZE - _lstm_b freeze went horribly wrong")
+        #         exit()
+        #
+        #     if (np.array_equal(sess.run(lm_opt._softmax_w_var), lm_opt._softmax_w) != True):
+        #         logger.info("MODEL FREEZE - _softmax_w freeze went horribly wrong")
+        #         exit()
+        #
+        #     if (np.array_equal(sess.run(lm_opt._softmax_b_var), lm_opt._softmax_b) != True):
+        #         logger.info("MODEL FREEZE - _softmax_b freeze went horribly wrong")
+        #         exit()
+        #
+        #     logger.info("MODEL FREEZE - Successful")
+        #
+        # if (lm_opt.special_train):
+        #     for index in lm_opt.mapping_indexes:
+        #         if(np.array_equal(sess.run(lm_opt._emb_var)[:, index], lm_opt.parameter_masks["LM/emb:0"][:, index]) != True):
+        #             logger.info("SPECIAL TRAIN - _emb freeze went horribly wrong")
+        #             exit()
+        #     logger.info("SPECIAL TRAIN - Successful")
 
 
 if __name__ == "__main__":
