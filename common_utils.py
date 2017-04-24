@@ -120,6 +120,8 @@ def get_common_argparse():
 
     parser.add_argument('--freeze_model', action='store_true',
                         help='Freeze whole model')
+   
+    parser.add_argument('--threshold', type=float, default=None, help='Fine grain threshold')
 
     parser.add_argument('--gen_from_models', type=str, default=None, help='Generate new model from specified models')
 
