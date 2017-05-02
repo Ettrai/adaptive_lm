@@ -21,7 +21,7 @@ from exp_utils import *
 def main(lm_opt):
     logger = lm_opt.logger
     model_prefix = ['best_lm']
-    dataset = ['test']
+    dataset = [lm_opt.test_on]
     lm_data, lm_vocab = load_datasets(lm_opt, dataset=dataset)
     lm_opt.vocab_size = lm_vocab.vocab_size
     logger.info('Loading data completed')
@@ -56,7 +56,7 @@ def main(lm_opt):
         token_loss = None
         if lm_opt.out_token_loss_file is not None:
             token_loss = []
-        ppl, _ = run_epoch(sess, model, lm_data['test'], lm_opt,
+        ppl, _ = run_epoch(sess, model, lm_data[lm_opt.test_on], lm_opt,
                            token_loss=token_loss)
         logger.info('PPL = {}'.format(ppl))
 
@@ -77,6 +77,11 @@ if __name__ == "__main__":
     parser.add_argument('--out_token_loss_file', type=str,
                         default=None,
                         help='output token loss to the file')
+
+    parser.add_argument('--test_on', type=str,
+                        default='test',
+                        help='output token loss to the file')
+
     args = parser.parse_args()
     opt = common_utils.Bunch.default_model_options()
     opt.update_from_ns(args)
