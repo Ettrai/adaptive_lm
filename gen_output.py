@@ -79,10 +79,9 @@ if __name__ == "__main__":
 
     print "Pushing model"
     rsync_command = "rsync -av "
-    rsync_command+= dest_dir + " " + source_dir
+    rsync_command+= dest_dir + " " + "peroni:/nfs-scratch/emt1627/tf-ensemble/data/r1.0/"
     print rsync_command
     os.system(rsync_command)
-
 
     print "Purging local model"
     command = "rm -rf " + model_path
