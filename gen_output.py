@@ -83,13 +83,13 @@ if __name__ == "__main__":
     print rsync_command
     os.system(rsync_command)
 
+    print "Sending email"
+    send_email("ettrai@u.northwestern.edu")
+
     print "Purging local model"
     command = "rm -rf " + model_path
     print command
     os.system(command)
-
-    print "Sending email"
-    send_email("ettrai@u.northwestern.edu")
 
     print
     print 'Total time: {}s'.format(time.time() - global_time)

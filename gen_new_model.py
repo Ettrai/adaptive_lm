@@ -67,7 +67,7 @@ if __name__ == "__main__":
         exit()
 
     print "Setting up folders"
-    # setup_folders()
+    setup_folders()
 
     print "Training new model"
     common_arguments = "--emb_size " + str(opt.emb_size) + " "
@@ -88,11 +88,11 @@ if __name__ == "__main__":
         special +="--threshold " + str(opt.threshold) + " "
 
     print "train.py command",common_arguments + log_file_path + special
-    # os.system("python train.py " + common_arguments + log_file_path + special)
+    os.system("python train.py " + common_arguments + log_file_path + special)
 
     print "Dumping new model parameters"
     print "get_params.py command",common_arguments
-    # os.system("python get_params.py " + common_arguments)
+    os.system("python get_params.py " + common_arguments)
 
     print "Testing generated model"
     special = "--num_steps 1 "
@@ -102,8 +102,21 @@ if __name__ == "__main__":
     print"test.py command", common_arguments + special
     os.system("python test.py " + common_arguments + special)
 
-    # print "Sending email"
-    # send_email("ettrai@u.northwestern.edu")
+    print "Pushing model"
+    rsync_command = "rsync -av "
+    source_dir= opt.new_model_path + "/"
+    dest_dir= "peroni:/nfs-scratch/emt1627/tf-ensemble/data/r1.0/" + opt.new_model_path + "/"
+    rsync_command +=source_dir + " " + dest_dir
+    print rsync_command
+    os.system(rsync_command)
+
+    print "Sending email"
+    send_email("ettrai@u.northwestern.edu")
+
+    print "Purging local model"
+    command = "rm -rf " + opt.new_model_path
+    print command
+    os.system(command)
 
     print
     print 'Total time: {}s'.format(time.time() - global_time)
