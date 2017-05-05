@@ -51,12 +51,23 @@ if __name__ == "__main__":
         print "No model path provided, exiting"
         exit()
 
+    model_path = opt.new_model_path
+
     common_arguments = "--emb_size " + str(opt.emb_size) + " "
     common_arguments+= "--state_size " + str(opt.state_size) + " "
     common_arguments+= "--max_grad_nor " + str(opt.max_grad_norm) + " "
-    common_arguments+= "--output_dir " + opt.new_model_path + " "
+    common_arguments+= "--output_dir " + model_path + " "
     common_arguments+= "--gpu "
-    log_file_path = "--log_file_path " + opt.new_model_path + "/training.log "
+    log_file_path = "--log_file_path " + model_path + "/training.log "
+
+
+    print "Fetching model"
+    rsync_command = "rsync -av "
+    source_dir= "peroni:/nfs-scratch/emt1627/tf-ensemble/data/r1.0/" + model_path
+    dest_dir= model_path
+    rsync_command +=source_dir + " " + dest_dir
+    print rsync_command
+    os.system(rsync_command)
 
     print "Testing generated model"
     special = "--num_steps 1 "
@@ -65,6 +76,18 @@ if __name__ == "__main__":
     special+= "--out_token_loss_file model_output_" + opt.test_on +  ".tsv "
     print"test.py command", common_arguments + special
     os.system("python test.py " + common_arguments + special)
+
+    print "Pushing model"
+    rsync_command = "rsync -av "
+    rsync_command+= dest_dir + " " + source_dir
+    print rsync_command
+    os.system(rsync_command)
+
+
+    print "Purging local model"
+    command = "rm -rf " + model_path
+    print command
+    os.system(command)
 
     print "Sending email"
     send_email("ettrai@u.northwestern.edu")
