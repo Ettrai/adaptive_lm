@@ -63,8 +63,8 @@ if __name__ == "__main__":
 
     print "Fetching model"
     rsync_command = "rsync -av "
-    source_dir= "peroni:/nfs-scratch/emt1627/tf-ensemble/data/r1.0/" + model_path
-    dest_dir= model_path
+    source_dir= "peroni:/nfs-scratch/emt1627/tf-ensemble/data/r1.0/" + model_path + "/"
+    dest_dir= model_path + "/"
     rsync_command +=source_dir + " " + dest_dir
     print rsync_command
     os.system(rsync_command)
@@ -79,7 +79,7 @@ if __name__ == "__main__":
 
     print "Pushing model"
     rsync_command = "rsync -av "
-    rsync_command+= dest_dir + " " + source_dir + "/"
+    rsync_command+= dest_dir + " " + source_dir
     print rsync_command
     os.system(rsync_command)
 
