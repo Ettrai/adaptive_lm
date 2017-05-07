@@ -60,15 +60,6 @@ if __name__ == "__main__":
     common_arguments+= "--gpu "
     log_file_path = "--log_file_path " + model_path + "/training.log "
 
-
-    print "Fetching model"
-    rsync_command = "rsync -av "
-    source_dir= "peroni:/nfs-scratch/emt1627/tf-ensemble/data/r1.0/" + model_path + "/"
-    dest_dir= model_path + "/"
-    rsync_command +=source_dir + " " + dest_dir
-    print rsync_command
-    os.system(rsync_command)
-
     print "Testing generated model"
     special = "--num_steps 1 "
     special+= "--batch_size 1 "
@@ -77,9 +68,12 @@ if __name__ == "__main__":
     print"test.py command", common_arguments + special
     os.system("python test.py " + common_arguments + special)
 
-    print "Pushing model"
+    print "Pushing model output"
     rsync_command = "rsync -av "
-    rsync_command+= dest_dir + " " + source_dir
+    source_dir= model_path + "/"
+    dest_dir= "peroni:/nfs-scratch/emt1627/tf-ensemble/data/r1.0/" + model_path + "/"
+    rsync_command +=source_dir + " " + dest_dir
+
     print rsync_command
     os.system(rsync_command)
 
