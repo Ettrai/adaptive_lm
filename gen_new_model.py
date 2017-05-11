@@ -86,6 +86,7 @@ if __name__ == "__main__":
     if(opt.freeze_model):
         special = "--freeze_model "
         special +="--threshold " + str(opt.threshold) + " "
+        special +="--sensitivity " + opt.sensitivity + " "
 
     print "train.py command",common_arguments + log_file_path + special
     os.system("python train.py " + common_arguments + log_file_path + special)
