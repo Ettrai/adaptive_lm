@@ -123,6 +123,8 @@ def get_common_argparse():
    
     parser.add_argument('--threshold', type=float, default=None, help='Fine grain threshold')
 
+    parser.add_argument('--sensitivity', type=str, default=None, help='Context Sensitive or Insensitive Freezing')
+
     parser.add_argument('--gen_from_models', type=str, default=None, help='Generate new model from specified models')
 
     parser.add_argument('--num_shared_neurons', type=int, default=None, help='Number of neurons to be shared')
