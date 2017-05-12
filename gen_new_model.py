@@ -103,21 +103,18 @@ if __name__ == "__main__":
     print"test.py command", common_arguments + special
     os.system("python test.py " + common_arguments + special)
 
-    print "Pushing model"
+    print "Adding generated model to list of models to push from Finagle"
     rsync_command = "rsync -av "
     source_dir= opt.new_model_path + "/"
     dest_dir= "peroni:/nfs-scratch/emt1627/tf-ensemble/data/r1.0/" + opt.new_model_path + "/"
     rsync_command +=source_dir + " " + dest_dir
-    print rsync_command
-    os.system(rsync_command)
+    clean_command = "rm -rf " + opt.new_model_path
+    with open("models/to_push/" + socket.gethostname() + str(global_time), "w") as myfile:
+        myfile.write(rsync_command)
+        myfile.write(clean_command)
 
     print "Sending email"
     send_email("ettrai@u.northwestern.edu")
-
-    print "Purging local model"
-    command = "rm -rf " + opt.new_model_path
-    print command
-    os.system(command)
 
     print
     print 'Total time: {}s'.format(time.time() - global_time)
