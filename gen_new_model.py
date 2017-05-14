@@ -107,8 +107,8 @@ if __name__ == "__main__":
     rsync_command = "rsync -av "
     source_dir= opt.new_model_path + "/"
     dest_dir= "peroni:/nfs-scratch/emt1627/tf-ensemble/data/r1.0/" + opt.new_model_path + "/"
-    rsync_command +=source_dir + " " + dest_dir
-    clean_command = "rm -rf " + opt.new_model_path
+    rsync_command +=source_dir + " " + dest_dir + "\n"
+    clean_command = "rm -rf " + opt.new_model_path + "\n"
     with open("models/to_push/" + socket.gethostname() + str(global_time), "w") as myfile:
         myfile.write(rsync_command)
         myfile.write(clean_command)
