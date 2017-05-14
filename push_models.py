@@ -29,8 +29,11 @@ def push_models():
     # Check which models probably failed
     to_check = []
     directories_list = glob.glob("models/*/")
+    print "directories1", directories_list
+
     for directory in directories_list:
         models_folders = glob.glob("models/" + directory + "*/")
+        print models_folders
 
         for model in models_folders:
             temp = "models" + directory + model + "\n"
