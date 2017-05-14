@@ -19,11 +19,11 @@ def push_models():
         commands = [x.strip() for x in commands]
         for command in commands:
             print command
-            # os.system(command)
+            os.system(command)
 
         command = "rm -rf " + model_to_push
         print command
-        # os.system(command)
+        os.system(command)
         print
 
     # Check which models probably failed
@@ -34,7 +34,7 @@ def push_models():
         models_folders = glob.glob(directory + "*/")
 
         for model in models_folders:
-            temp = "models" + directory + model + "\n"
+            temp = model + "\n"
             to_check.append(temp)
 
     if (len(to_check) != 0):
