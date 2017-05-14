@@ -14,11 +14,11 @@ def push_models():
         commands = [x.strip() for x in commands]
         for command in commands:
             print command
-            # os.system(command)
+            os.system(command)
 
         command = "rm -rf " + model_to_push
         print command
-        # os.system(command)
+        os.system(command)
         print
 
 
