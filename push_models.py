@@ -36,7 +36,7 @@ def push_models():
             temp = "models" + directory + model + "\n"
             to_check.append(temp)
 
-    if len(to_check != 0):
+    if (len(to_check) != 0):
         text = "Check the following models folders on Finagle:\n\n"
         for model in to_check:
             text+=  " - " + model
