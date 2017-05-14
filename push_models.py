@@ -16,6 +16,8 @@ def push_models():
             print command
             # os.system(command)
 
+        print "rm -rf " + model_to_push
+
 if __name__ == "__main__":
     push_models()
 
