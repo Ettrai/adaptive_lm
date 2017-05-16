@@ -56,7 +56,7 @@ if __name__ == "__main__":
 
     parser.add_argument('--new_model_path', type=str,default=None, help='Train and generates output of a new model')
     parser.add_argument('--force_path', action='store_true', help='Erases content of chosen folder if not empty')
-    parser.add_argument('--test_on', type=str, default='test', help='Select train, valid, test')
+    # parser.add_argument('--test_on', type=str, default='test', help='Select train, valid, test')
 
     args = parser.parse_args()
     opt = common_utils.Bunch.default_model_options()
@@ -95,13 +95,20 @@ if __name__ == "__main__":
     print "get_params.py command",common_arguments
     os.system("python get_params.py " + common_arguments)
 
-    print "Testing generated model"
+    print "Testing generated model on testing set"
     special = "--num_steps 1 "
     special+= "--batch_size 1 "
-    special+= "--test_on " + opt.test_on + " "
-    special+= "--out_token_loss_file model_output_" + opt.test_on +  ".tsv "
-    print"test.py command", common_arguments + special
-    os.system("python test.py " + common_arguments + special)
+    test_set = "--test_on " + "test" + " "
+    test_set+= "--out_token_loss_file model_output_" + "test" +  ".tsv "
+    print"test.py command", common_arguments + special + test_set
+    os.system("python test.py " + common_arguments + special + test_set)
+
+    print "Testing generated model on validation set"
+    test_set = "--test_on " + "valid" + " "
+    test_set+= "--out_token_loss_file model_output_" + "valid" +  ".tsv "
+    print"test.py command", common_arguments + special + test_set
+    os.system("python test.py " + common_arguments + special + test_set)
+
 
     print "Adding generated model to list of models to push from Finagle"
     rsync_command = "rsync -av "
