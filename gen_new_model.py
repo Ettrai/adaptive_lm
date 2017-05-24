@@ -127,6 +127,12 @@ if __name__ == "__main__":
         myfile.write(rsync_command)
         myfile.write(clean_command)
 
+    print "Updating Job Scheduler on Peroni"
+    hostname  = socket.gethostname()
+    command = "ssh peroni "
+    command+=  "\"cd repo/tf-ensemble/scripts/done_hosts;touch " + hostname + "\""
+    os.system(command)
+
     print "Model generation completed, sending email"
     send_gen_completed_mail(email_receiver)
 
