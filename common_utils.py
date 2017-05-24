@@ -123,7 +123,7 @@ def get_common_argparse():
    
     parser.add_argument('--threshold', type=float, default=None, help='Fine grain threshold')
 
-    parser.add_argument('--sensitivity', type=str, default=None, help='Context Sensitive or Insensitive Freezing')
+    parser.add_argument('--mask_folder', type=str, default=None, help='Specifies the mask folder to be used')
 
     parser.add_argument('--gen_from_models', type=str, default=None, help='Generate new model from specified models')
 

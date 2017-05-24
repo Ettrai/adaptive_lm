@@ -66,10 +66,10 @@ def main(lm_opt):
         
         file_suffix = "m1_m2_t" + str(lm_opt.threshold) + ".pickle"
 
-        context_sensitivity = lm_opt.sensitivity
+        mask_folder = lm_opt.mask_folder
 
-        lm_opt.parameter_masks = cPickle.load(open("../data/r1.0/masks/" + context_sensitivity + "/parameters_" + file_suffix, "r"))
-        lm_opt.freeze_masks = cPickle.load(open("../data/r1.0/masks/" + context_sensitivity + "/freeze_" + file_suffix , "r"))
+        lm_opt.parameter_masks = cPickle.load(open("../data/r1.0/masks/" + mask_folder + "/parameters_" + file_suffix, "r"))
+        lm_opt.freeze_masks = cPickle.load(open("../data/r1.0/masks/" + mask_folder + "/freeze_" + file_suffix , "r"))
 
         lm_opt._emb = lm_opt.parameter_masks["LM/emb:0"]
         lm_opt._lstm_w = lm_opt.parameter_masks["LM/rnn/rnn/multi_rnn_cell/cell_0/basic_lstm_cell/weights:0"]
