@@ -130,7 +130,7 @@ if __name__ == "__main__":
     print "Updating Job Scheduler on Peroni"
     hostname  = socket.gethostname()
     command = "ssh peroni "
-    command+=  "\"cd repo/tf-ensemble/scripts/done_hosts;touch " + hostname + "\""
+    command+=  "\"cd repo/tf-ensemble/job_scheduler/ack;touch " + hostname + "\""
     os.system(command)
 
     print "Model generation completed, sending email"
