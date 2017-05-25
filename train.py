@@ -99,7 +99,9 @@ def main(lm_opt):
                 lm_train_op, lm_lr_var = lm.train_op_mod(lm_train, lm_opt)
 
             elif(lm_opt.freeze_model):
-                logger.info("Trainining completely frozen model - " + lm_opt.sensitivity)
+                logger.info("Trainining frozen model")
+                logger.info("Mask used for training - " + lm_opt.mask_name)
+
                 lm_train_op, lm_lr_var = lm.train_op_frozen(lm_train, lm_opt)
 
             else:
