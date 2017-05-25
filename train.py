@@ -63,13 +63,11 @@ def main(lm_opt):
 
         # lm_opt.parameter_masks = cPickle.load(open("../data/r1.0/models/m1/params.pickle", "r"))
         # lm_opt.freeze_masks = cPickle.load(open("../data/r1.0/masks/zeros/freeze_m1.pickle", "r"))
-        
-        file_suffix = "m1_m2_t" + str(lm_opt.threshold) + ".pickle"
 
-        mask_folder = lm_opt.mask_folder
+        mask_name = lm_opt.mask_name
 
-        lm_opt.parameter_masks = cPickle.load(open("../data/r1.0/masks/" + mask_folder + "/parameters_" + file_suffix, "r"))
-        lm_opt.freeze_masks = cPickle.load(open("../data/r1.0/masks/" + mask_folder + "/freeze_" + file_suffix , "r"))
+        lm_opt.parameter_masks = cPickle.load(open("../data/r1.0/masks/" + mask_name + "_parameters" + ".pickle", "r"))
+        lm_opt.freeze_masks = cPickle.load(open("../data/r1.0/masks/" + mask_name + "_freeze" + ".pickle"  , "r"))
 
         lm_opt._emb = lm_opt.parameter_masks["LM/emb:0"]
         lm_opt._lstm_w = lm_opt.parameter_masks["LM/rnn/rnn/multi_rnn_cell/cell_0/basic_lstm_cell/weights:0"]
