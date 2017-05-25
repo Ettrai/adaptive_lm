@@ -27,6 +27,12 @@ def create_model_directory(directory):
         print "Creating directory", directory
         os.makedirs(directory)
 
+    else:
+        print "Found incomplete model training"
+        print "Wiping old folder"
+        os.system("rm -rf " + directory)
+        create_model_directory(directory)
+
 
 def send_error_mail(send_to, error):
     hostname  = socket.gethostname()
