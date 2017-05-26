@@ -16,13 +16,6 @@ email_receiver = "ettrai@u.northwestern.edu"
 
 def create_model_directory(directory):
 
-    # if os.path.exists(directory):
-    #     print "Model output folder already exists"
-    #     print "Emailing error message"
-    #     print
-    #     send_error_mail(email_receiver, "Model output directory already exists!\n")
-    #     exit()
-
     if not os.path.exists(directory):
         print "Creating directory", directory
         os.makedirs(directory)
@@ -138,9 +131,9 @@ if __name__ == "__main__":
     command = "ssh peroni "
     command+=  "\"cd repo/tf-ensemble/job_scheduler/ack;touch " + hostname + "\""
     os.system(command)
-
-    print "Model generation completed, sending email"
-    send_gen_completed_mail(email_receiver)
+    #
+    # print "Model generation completed, sending email"
+    # send_gen_completed_mail(email_receiver)
 
     print
     print 'Total time: {}s'.format(time.time() - global_time)
