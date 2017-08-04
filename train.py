@@ -173,14 +173,13 @@ def main(lm_opt):
                     sess.run(tf.assign(v, tf.add(v,lm_opt.parameter_masks["LM/softmax_b:0"])))
                     lm_opt._softmax_b_var = v
 
-            trainable_vars = tf.trainable_variables()
-            trainable_vals = sess.run(trainable_vars)
-            params = {}
-            for i, v in enumerate(trainable_vars):
-                params[v.name] = trainable_vals[i]
-            with open(lm_opt.output_dir + "/init_params.pickle", 'w') as ofp:
-                cPickle.dump(params, ofp)
-
+        trainable_vars = tf.trainable_variables()
+        trainable_vals = sess.run(trainable_vars)
+        params = {}
+        for i, v in enumerate(trainable_vars):
+            params[v.name] = trainable_vals[i]
+        with open(lm_opt.output_dir + "/init_params.pickle", 'w') as ofp:
+            cPickle.dump(params, ofp)
 
         logger.info('Start training loop:')
         logger.debug('\n' + common_utils.SUN_BRO())
